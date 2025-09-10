@@ -1,0 +1,9 @@
+id,name,latitude,longitude,demand,priority,country
+C1,London Store,51.5074,-0.1278,800,high,UK
+C2,Tokyo Retail,35.6762,139.6503,1200,medium,Japan
+C3,Sydney Outlet,-33.8688,151.2093,600,low,Australia
+C4,Berlin Branch,52.5200,13.4050,900,high,Germany
+C5,Los Angeles Store,34.0522,-118.2437,1100,medium,USA
+C6,Mumbai Center,19.0760,72.8777,750,high,India
+C7,Toronto Branch,43.6532,-79.3832,650,medium,Canada
+C8,Mexico City Store,19.4326,-99.1332,500,low,Mexico

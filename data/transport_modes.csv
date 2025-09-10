@@ -1,0 +1,5 @@
+mode,cost_per_km_per_unit,speed_km_per_day,co2_per_km_per_unit,capacity_limit,reliability
+Air,0.25,8000,0.45,2000,0.95
+Sea,0.08,500,0.12,8000,0.85
+Road,0.15,800,0.25,1500,0.9
+Rail,0.12,600,0.18,3000,0.88

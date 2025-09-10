@@ -1,0 +1,6 @@
+id,name,city,country,latitude,longitude,capacity,current_inventory,operating_cost_per_unit
+W1,New York Hub,New York,USA,40.7128,-74.006,5000,3200,15
+W2,Hamburg Center,Hamburg,Germany,53.5511,9.9937,4200,2800,18
+W3,Singapore Port,Singapore,Singapore,1.3521,103.8198,3800,2100,22
+W4,Mumbai Gateway,Mumbai,India,19.076,72.8777,3500,2400,12
+W5,Los Angeles Depot,Los Angeles,USA,34.0522,-118.2437,4800,3100,17
