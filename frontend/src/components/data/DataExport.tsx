@@ -1,6 +1,6 @@
 import React from 'react'
 
-const DataExport: React.FC<{ data: { warehouses: any[]; customers: any[]; routes: any[] } }> = ({ data }) => {
+const DataExport: React.FC<{ data: { warehouses: any[]; customers: any[]; routes: any[] } }> = () => {
   const handleExport = (format: 'csv' | 'json') => {
     // placeholder
     alert(`Exporting ${format}...`)

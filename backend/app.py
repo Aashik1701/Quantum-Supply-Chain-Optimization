@@ -76,6 +76,7 @@ if __name__ == '__main__':
     
     # Development server
     debug = os.environ.get('FLASK_ENV') == 'development'
+    # Use 5000 by default to align with docker-compose and local proxy config
     port = int(os.environ.get('PORT', 5000))
     
     socketio.run(

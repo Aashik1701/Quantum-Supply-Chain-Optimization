@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { RootState, AppDispatch } from '../store'
-import { 
-  startOptimization, 
-  stopOptimization, 
-  updateParameters 
-} from '../store/optimizationSlice'
+import { useSelector } from 'react-redux'
+import { RootState } from '../store'
 import OptimizationPanel from '../components/optimization/OptimizationPanel'
 import MethodSelector from '../components/optimization/MethodSelector'
 import ParameterConfig from '../components/optimization/ParameterConfig'
@@ -14,14 +9,10 @@ import ResultsPanel from '../components/optimization/ResultsPanel'
 import MapVisualization from '../components/visualization/MapVisualization'
 
 const OptimizationPage: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>()
   const { 
     isRunning, 
     progress, 
-    results, 
-    parameters, 
-    selectedMethod,
-    error 
+    results
   } = useSelector((state: RootState) => state.optimization)
   const { warehouses, customers, routes } = useSelector((state: RootState) => state.data)
 
@@ -36,15 +27,7 @@ const OptimizationPage: React.FC = () => {
   }, [isRunning, progress, results])
 
   const handleStartOptimization = () => {
-    dispatch(startOptimization({
-      method: selectedMethod,
-      parameters,
-      data: { warehouses, customers, routes }
-    }))
-  }
-
-  const handleStopOptimization = () => {
-    dispatch(stopOptimization())
+    setActiveTab('progress')
   }
 
   return (
@@ -63,12 +46,7 @@ const OptimizationPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Control Panel */}
         <div className="lg:col-span-1 space-y-6">
-          <OptimizationPanel
-            isRunning={isRunning}
-            onStart={handleStartOptimization}
-            onStop={handleStopOptimization}
-            error={error}
-          />
+          <OptimizationPanel onOptimize={handleStartOptimization} />
 
           {/* Tab Navigation */}
           <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700">
@@ -111,7 +89,7 @@ const OptimizationPage: React.FC = () => {
               )}
 
               {activeTab === 'results' && (
-                <ResultsPanel results={results} />
+                <ResultsPanel />
               )}
             </div>
           </div>

@@ -22,22 +22,86 @@ def health():
 
 
 # Optimization endpoints
+@api_bp.route('/optimize', methods=['POST'])
+def optimize():
+    """Generic optimization dispatcher endpoint"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response(
+                'VALIDATION_ERROR', 'No data provided', status=400
+            )
+        
+        method = data.get('method', 'hybrid').lower()
+        
+        # Route to specific optimization method
+        if method == 'classical':
+            return _run_classical_optimization(data)
+        elif method == 'quantum':
+            return _run_quantum_optimization(data)
+        elif method == 'hybrid':
+            return _run_hybrid_optimization(data)
+        else:
+            return error_response(
+                'INVALID_METHOD',
+                f'Invalid method: {method}. Expected classical/quantum/hybrid',
+                status=400
+            )
+    except Exception as e:  # pragma: no cover
+        return error_response(
+            'OPTIMIZATION_ERROR', 'Optimization dispatcher failed',
+            details=str(e), status=500
+        )
+
+
+def _run_classical_optimization(data):
+    """Internal classical optimization logic"""
+    if not validate_optimization_request(data):
+        return error_response(
+            'VALIDATION_ERROR', 'Invalid input data', status=400
+        )
+    
+    result = optimization_service.run_classical_optimization(data)
+    return success_response(
+        {'method': 'classical', 'result': result},
+        message='Optimization completed'
+    )
+
+
+def _run_quantum_optimization(data):
+    """Internal quantum optimization logic"""
+    if not validate_optimization_request(data):
+        return error_response(
+            'VALIDATION_ERROR', 'Invalid input data', status=400
+        )
+    
+    result = optimization_service.run_quantum_optimization(data)
+    return success_response(
+        {'method': 'quantum', 'result': result},
+        message='Optimization completed'
+    )
+
+
+def _run_hybrid_optimization(data):
+    """Internal hybrid optimization logic"""
+    if not validate_optimization_request(data):
+        return error_response(
+            'VALIDATION_ERROR', 'Invalid input data', status=400
+        )
+    
+    result = optimization_service.run_hybrid_optimization(data)
+    return success_response(
+        {'method': 'hybrid', 'result': result},
+        message='Optimization completed'
+    )
+
+
 @api_bp.route('/optimize/classical', methods=['POST'])
 def optimize_classical():
     """Run classical optimization"""
     try:
         data = request.get_json()
-
-        if not validate_optimization_request(data):
-            return error_response(
-                'VALIDATION_ERROR', 'Invalid input data', status=400
-            )
-
-        result = optimization_service.run_classical_optimization(data)
-        return success_response(
-            {'method': 'classical', 'result': result},
-            message='Optimization completed'
-        )
+        return _run_classical_optimization(data)
     except Exception as e:  # pragma: no cover
         return error_response(
             'OPTIMIZATION_FAILED', 'Optimization failed',
@@ -50,17 +114,7 @@ def optimize_quantum():
     """Run quantum optimization (QAOA)"""
     try:
         data = request.get_json()
-
-        if not validate_optimization_request(data):
-            return error_response(
-                'VALIDATION_ERROR', 'Invalid input data', status=400
-            )
-
-        result = optimization_service.run_quantum_optimization(data)
-        return success_response(
-            {'method': 'quantum', 'result': result},
-            message='Optimization completed'
-        )
+        return _run_quantum_optimization(data)
     except Exception as e:  # pragma: no cover
         return error_response(
             'OPTIMIZATION_FAILED', 'Quantum optimization failed',
@@ -73,17 +127,7 @@ def optimize_hybrid():
     """Run hybrid quantum-classical optimization"""
     try:
         data = request.get_json()
-
-        if not validate_optimization_request(data):
-            return error_response(
-                'VALIDATION_ERROR', 'Invalid input data', status=400
-            )
-
-        result = optimization_service.run_hybrid_optimization(data)
-        return success_response(
-            {'method': 'hybrid', 'result': result},
-            message='Optimization completed'
-        )
+        return _run_hybrid_optimization(data)
     except Exception as e:  # pragma: no cover
         return error_response(
             'OPTIMIZATION_FAILED', 'Hybrid optimization failed',
@@ -245,5 +289,36 @@ def list_results():
     except Exception as e:  # pragma: no cover
         return error_response(
             'RESULTS_LIST_ERROR', 'Failed to list results',
+            details=str(e), status=500
+        )
+
+
+# Dashboard aggregation endpoint
+@api_bp.route('/dashboard', methods=['GET'])
+def dashboard():
+    """Return aggregated metrics for dashboard view.
+
+    This keeps it simple for now: counts of entities and latest results.
+    Extend later with performance metrics, inventory levels, etc.
+    """
+    try:
+        warehouses = data_service.get_warehouses()
+        customers = data_service.get_customers()
+        routes_data = data_service.get_routes()
+        recent_results = optimization_service.list_results(limit=5)
+
+        payload = {
+            'summary': {
+                'warehouses': len(warehouses or []),
+                'customers': len(customers or []),
+                'routes': len(routes_data or []),
+                'recentOptimizations': len(recent_results or []),
+            },
+            'recentResults': recent_results,
+        }
+        return success_response(payload)
+    except Exception as e:  # pragma: no cover
+        return error_response(
+            'DASHBOARD_ERROR', 'Failed to build dashboard data',
             details=str(e), status=500
         )

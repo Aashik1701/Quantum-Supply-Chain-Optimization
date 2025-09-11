@@ -1,5 +1,5 @@
 const uiSlice = {
-  reducer: (state = { sidebarOpen: false, theme: 'light' }, action: any) => state
+  reducer: (state = { sidebarOpen: false, theme: 'light' }) => state
 }
 
 export default uiSlice.reducer

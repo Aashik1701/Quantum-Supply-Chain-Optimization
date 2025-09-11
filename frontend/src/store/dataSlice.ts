@@ -109,9 +109,9 @@ const dataSlice = createSlice({
       .addCase(fetchData.pending, (state) => { state.loading = true; state.error = null })
       .addCase(fetchData.fulfilled, (state, action) => {
         state.loading = false
-        state.warehouses = action.payload.warehouses
-        state.customers = action.payload.customers
-        state.routes = action.payload.routes
+        state.warehouses = action.payload.warehouses as unknown as any[]
+        state.customers = action.payload.customers as unknown as any[]
+        state.routes = action.payload.routes as unknown as any[]
       })
       .addCase(fetchData.rejected, (state, action) => { state.loading = false; state.error = action.payload as string })
 
@@ -130,7 +130,7 @@ const dataSlice = createSlice({
     // Validation
     builder
       .addCase(validateData.pending, (state) => { state.loading = true; state.error = null; state.validation = null })
-      .addCase(validateData.fulfilled, (state, action) => { state.loading = false; state.validation = action.payload as ValidationResult })
+      .addCase(validateData.fulfilled, (state, action) => { state.loading = false; state.validation = action.payload as unknown as ValidationResult })
       .addCase(validateData.rejected, (state, action) => { state.loading = false; state.error = action.payload as string })
 
     // Deletion
