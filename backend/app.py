@@ -1,15 +1,14 @@
-"""
-Main Flask application entry point for Hybrid Quantum-Classical Supply Chain Optimization
-"""
+"""Main Flask application for Hybrid Quantum-Classical Supply Chain API"""
 
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config.config import Config
 from api.routes import api_bp
+from utils.response import error_response
 from api.websocket import socketio_events
 
 
@@ -19,18 +18,46 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # Initialize extensions
-    CORS(app, origins=app.config.get('CORS_ORIGINS', ['http://localhost:3000']))
+    CORS(app, origins=app.config.get(
+        'CORS_ORIGINS', ['http://localhost:3000']
+    ))
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
     
     # Register blueprints
-    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
+
+    # Global error handlers
+    @app.errorhandler(404)
+    def not_found(_):  # pragma: no cover
+        return error_response('NOT_FOUND', 'Resource not found', status=404)
+
+    @app.errorhandler(400)
+    def bad_request(e):  # pragma: no cover
+        msg = getattr(e, 'description', 'Bad request')
+        return error_response('BAD_REQUEST', msg, status=400)
+
+    @app.errorhandler(500)
+    def internal_error(e):  # pragma: no cover
+        return error_response(
+            'INTERNAL_ERROR', 'Internal server error',
+            details=str(e), status=500
+        )
+
+    @app.errorhandler(Exception)
+    def unhandled_exception(e):  # pragma: no cover
+        return error_response(
+            'UNHANDLED_EXCEPTION', 'Unhandled exception',
+            details=str(e), status=500
+        )
     
     # Register WebSocket events
     socketio_events(socketio)
     
     # Middleware for production
     if app.config.get('ENV') == 'production':
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+        )
     
     @app.route('/health')
     def health_check():
@@ -40,14 +67,6 @@ def create_app(config_class=Config):
             'version': app.config.get('VERSION', '1.0.0'),
             'environment': app.config.get('ENV', 'development')
         })
-    
-    @app.errorhandler(404)
-    def not_found(error):
-        return jsonify({'error': 'Not found'}), 404
-    
-    @app.errorhandler(500)
-    def internal_error(error):
-        return jsonify({'error': 'Internal server error'}), 500
     
     return app, socketio
 

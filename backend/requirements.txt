@@ -1,6 +1,3 @@
-"""
-Backend requirements for Hybrid Quantum-Classical Supply Chain Optimization
-"""
 
 # Core Flask dependencies
 Flask==2.3.3
