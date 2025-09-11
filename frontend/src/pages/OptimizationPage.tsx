@@ -50,11 +50,11 @@ const OptimizationPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-6">
+        <h1 className="text-2xl font-bold text-slate-200">
           Supply Chain Optimization
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-slate-300 mt-1">
           Configure and run quantum-classical hybrid optimization algorithms.
         </p>
       </div>
@@ -71,8 +71,8 @@ const OptimizationPage: React.FC = () => {
           />
 
           {/* Tab Navigation */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="border-b border-gray-200">
+          <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700">
+            <div className="border-b border-slate-700">
               <nav className="flex">
                 {[
                   { id: 'configure', label: 'Configure', icon: '⚙️' },
@@ -85,7 +85,7 @@ const OptimizationPage: React.FC = () => {
                     className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                       activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        : 'border-transparent text-slate-400 hover:text-slate-300'
                     }`}
                   >
                     <span className="mr-2">{tab.icon}</span>
@@ -120,8 +120,8 @@ const OptimizationPage: React.FC = () => {
         {/* Visualization Area */}
         <div className="lg:col-span-2 space-y-6">
           {/* Map Visualization */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-6">
+            <h2 className="text-lg font-semibold text-slate-200 mb-4">
               Network Visualization
             </h2>
             <div className="h-96">
@@ -136,8 +136,8 @@ const OptimizationPage: React.FC = () => {
 
           {/* Results Summary */}
           {results && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 p-6">
+              <h2 className="text-lg font-semibold text-slate-200 mb-4">
                 Optimization Summary
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
