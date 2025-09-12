@@ -1,0 +1,3 @@
+factory_id,country,city,lat,lon,daily_production_capacity
+F1,Australia,Sydney,-33.8688,151.2093,4505
+F2,China,Shanghai,31.2304,121.4737,2252

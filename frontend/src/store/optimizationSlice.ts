@@ -42,6 +42,40 @@ export const runOptimization = createAsyncThunk(
   }
 )
 
+// Async thunk for VRP optimization
+export const runVRPOptimization = createAsyncThunk(
+  'optimization/runVRPOptimization',
+  async (payload: { warehouses?: any[]; customers?: any[]; routes?: any[] }, { rejectWithValue }) => {
+    try {
+      const result = await apiService.runVRPOptimization({
+        warehouses: payload.warehouses,
+        customers: payload.customers,
+        routes: payload.routes,
+      })
+      return result
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'VRP Optimization failed')
+    }
+  }
+)
+
+// Async thunk for Hybrid VRP optimization
+export const runHybridVRPOptimization = createAsyncThunk(
+  'optimization/runHybridVRPOptimization',
+  async (payload: { warehouses?: any[]; customers?: any[]; routes?: any[] }, { rejectWithValue }) => {
+    try {
+      const result = await apiService.runHybridVRPOptimization({
+        warehouses: payload.warehouses,
+        customers: payload.customers,
+        routes: payload.routes,
+      })
+      return result
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Hybrid VRP Optimization failed')
+    }
+  }
+)
+
 const optimizationSlice = createSlice({
   name: 'optimization',
   initialState,
@@ -89,6 +123,40 @@ const optimizationSlice = createSlice({
         state.isRunning = false
         state.progress = 0
         state.error = action.payload as string || 'Optimization failed'
+      })
+      .addCase(runVRPOptimization.pending, (state) => {
+        state.isRunning = true
+        state.progress = 0
+        state.error = null
+        state.results = null
+      })
+      .addCase(runVRPOptimization.fulfilled, (state, action) => {
+        state.isRunning = false
+        state.progress = 100
+        state.results = action.payload
+        state.error = null
+      })
+      .addCase(runVRPOptimization.rejected, (state, action) => {
+        state.isRunning = false
+        state.progress = 0
+        state.error = action.payload as string || 'VRP Optimization failed'
+      })
+      .addCase(runHybridVRPOptimization.pending, (state) => {
+        state.isRunning = true
+        state.progress = 0
+        state.error = null
+        state.results = null
+      })
+      .addCase(runHybridVRPOptimization.fulfilled, (state, action) => {
+        state.isRunning = false
+        state.progress = 100
+        state.results = action.payload
+        state.error = null
+      })
+      .addCase(runHybridVRPOptimization.rejected, (state, action) => {
+        state.isRunning = false
+        state.progress = 0
+        state.error = action.payload as string || 'Hybrid VRP Optimization failed'
       })
   },
 })

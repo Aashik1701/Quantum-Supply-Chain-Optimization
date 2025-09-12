@@ -7,6 +7,7 @@ from flask_socketio import SocketIO
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config.config import Config
+from config.database import init_db
 from api.routes import api_bp
 from utils.response import error_response
 from api.websocket import socketio_events
@@ -16,13 +17,13 @@ def create_app(config_class=Config):
     """Application factory pattern"""
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
+    # Initialize database
+    init_db()
     # Initialize extensions
     CORS(app, origins=app.config.get(
         'CORS_ORIGINS', ['http://localhost:3000']
     ))
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-    
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 
@@ -49,16 +50,13 @@ def create_app(config_class=Config):
             'UNHANDLED_EXCEPTION', 'Unhandled exception',
             details=str(e), status=500
         )
-    
     # Register WebSocket events
     socketio_events(socketio)
-    
     # Middleware for production
     if app.config.get('ENV') == 'production':
         app.wsgi_app = ProxyFix(
             app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
         )
-    
     @app.route('/health')
     def health_check():
         """Health check endpoint"""
@@ -67,18 +65,15 @@ def create_app(config_class=Config):
             'version': app.config.get('VERSION', '1.0.0'),
             'environment': app.config.get('ENV', 'development')
         })
-    
     return app, socketio
 
 
 if __name__ == '__main__':
     app, socketio = create_app()
-    
     # Development server
     debug = os.environ.get('FLASK_ENV') == 'development'
     # Use 5000 by default to align with docker-compose and local proxy config
     port = int(os.environ.get('PORT', 5000))
-    
     socketio.run(
         app,
         debug=debug,

@@ -1,0 +1,9 @@
+id,name,city,country,latitude,longitude,demand,priority,max_delivery_time_days
+C1,London Store,London,UK,51.5074,-0.1278,800,1,7
+C2,Tokyo Retail,Tokyo,Japan,35.6762,139.6503,1200,1,14
+C3,Sydney Branch,Sydney,Australia,-33.8688,151.2093,600,2,10
+C4,Berlin Outlet,Berlin,Germany,52.52,13.405,900,1,5
+C5,Dubai Market,Dubai,UAE,25.2048,55.2708,700,2,12
+C6,Mexico Store,Mexico City,Mexico,19.4326,-99.1332,500,3,8
+C7,Toronto Branch,Toronto,Canada,43.6532,-79.3832,650,2,6
+C8,São Paulo Hub,São Paulo,Brazil,-23.5505,-46.6333,850,1,15

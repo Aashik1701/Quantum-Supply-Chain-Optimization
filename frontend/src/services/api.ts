@@ -87,6 +87,14 @@ const apiService = {
 		return api.post('/optimize', payload)
 	},
 
+	async runVRPOptimization(payload: any) {
+		return api.post('/optimize/vrp', payload)
+	},
+
+	async runHybridVRPOptimization(payload: any) {
+		return api.post('/optimize/hybrid-vrp', payload)
+	},
+
 	async getOptimizationStatus(jobId: string) {
 		return api.get(`/optimize/status/${jobId}`)
 	},

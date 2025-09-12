@@ -148,7 +148,7 @@ const DataUpload: React.FC<DataUploadProps> = ({ onUploadComplete }) => {
         <div className="text-xs text-gray-600 font-mono">
           {selectedDataType === 'warehouses' && 'id,name,latitude,longitude,capacity,operating_cost,country'}
           {selectedDataType === 'customers' && 'id,name,latitude,longitude,demand,priority,country'}
-          {selectedDataType === 'routes' && 'id,warehouse_id,customer_id,transport_mode,cost_per_km,co2_per_km,speed_kmh'}
+          {selectedDataType === 'routes' && 'id,warehouse_id,customer_id,distance_km,transport_mode,cost_per_km,co2_per_km,speed_kmh'}
         </div>
       </div>
     </div>

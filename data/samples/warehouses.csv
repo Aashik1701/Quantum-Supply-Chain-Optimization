@@ -1,6 +1,0 @@
-id,name,latitude,longitude,capacity,operating_cost,country
-W1,New York Hub,40.7128,-74.0060,5000,1000,USA
-W2,Hamburg Center,53.5511,9.9937,4200,800,Germany
-W3,Singapore Hub,1.3521,103.8198,3500,900,Singapore
-W4,Dubai Logistics,25.2048,55.2708,4000,850,UAE
-W5,São Paulo Center,-23.5505,-46.6333,3800,750,Brazil

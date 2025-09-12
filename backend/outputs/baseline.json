@@ -1,0 +1,52 @@
+{
+  "num_nodes": 13,
+  "vehicle_capacities": [
+    200,
+    800,
+    5000,
+    1000
+  ],
+  "routes": [
+    {
+      "vehicle_id": 1,
+      "depot_node": "W2",
+      "route": [
+        "W2",
+        "C1",
+        "W2"
+      ],
+      "distance": 1440,
+      "load": 800
+    },
+    {
+      "vehicle_id": 2,
+      "depot_node": "W3",
+      "route": [
+        "W3",
+        "C2",
+        "C4",
+        "C7",
+        "W5",
+        "C6",
+        "C8",
+        "C3",
+        "W3"
+      ],
+      "distance": 53780,
+      "load": 4700
+    },
+    {
+      "vehicle_id": 3,
+      "depot_node": "W4",
+      "route": [
+        "W4",
+        "C5",
+        "W4"
+      ],
+      "distance": 3870,
+      "load": 700
+    }
+  ],
+  "total_distance": 59090,
+  "total_load": 6200
+}

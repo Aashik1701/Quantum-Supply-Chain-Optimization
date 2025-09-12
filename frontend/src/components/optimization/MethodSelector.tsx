@@ -15,6 +15,8 @@ const MethodSelector: React.FC = () => {
         <option value="hybrid">Hybrid (QAOA + Classical)</option>
         <option value="quantum">Quantum (QAOA)</option>
         <option value="classical">Classical (OR-Tools)</option>
+        <option value="vrp">Vehicle Routing Problem (VRP)</option>
+        <option value="hybrid_vrp">Hybrid VRP (Classical + Quantum)</option>
       </select>
     </div>
   )

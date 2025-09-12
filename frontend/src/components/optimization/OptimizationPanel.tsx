@@ -1,7 +1,7 @@
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState, AppDispatch } from '../../store'
-import { runOptimization, stopOptimization } from '../../store/optimizationSlice'
+import { runOptimization, stopOptimization, runVRPOptimization, runHybridVRPOptimization } from '../../store/optimizationSlice'
 import MethodSelector from './MethodSelector'
 import ParameterConfig from './ParameterConfig'
 import OptimizationProgress from './OptimizationProgress'
@@ -28,13 +28,27 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({ onOptimize }) => 
       dispatch(stopOptimization())
     } else {
       try {
-        await dispatch(runOptimization({ 
-          method: selectedMethod, 
-          parameters,
-          warehouses,
-          customers,
-          routes 
-        })).unwrap()
+        if (selectedMethod === 'vrp') {
+          await dispatch(runVRPOptimization({ 
+            warehouses,
+            customers,
+            routes 
+          })).unwrap()
+        } else if (selectedMethod === 'hybrid-vrp') {
+          await dispatch(runHybridVRPOptimization({ 
+            warehouses,
+            customers,
+            routes 
+          })).unwrap()
+        } else {
+          await dispatch(runOptimization({ 
+            method: selectedMethod, 
+            parameters,
+            warehouses,
+            customers,
+            routes 
+          })).unwrap()
+        }
         if (onOptimize) {
           onOptimize()
         }
@@ -98,6 +112,8 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({ onOptimize }) => 
             {selectedMethod === 'hybrid' && 'Combines classical and quantum algorithms for optimal results.'}
             {selectedMethod === 'quantum' && 'Uses Quantum Approximate Optimization Algorithm (QAOA).'}
             {selectedMethod === 'classical' && 'Uses classical linear programming with OR-Tools.'}
+            {selectedMethod === 'vrp' && 'Vehicle Routing Problem optimization using OR-Tools for route planning.'}
+            {selectedMethod === 'hybrid-vrp' && 'Advanced VRP with hybrid quantum-classical optimization algorithms.'}
           </p>
         </div>
       </div>

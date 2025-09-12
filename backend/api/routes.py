@@ -4,15 +4,21 @@ Main API routes for Hybrid Quantum-Classical Supply Chain Optimization
 
 from flask import Blueprint, request
 from utils.response import success_response, error_response
-from services.optimization_service import OptimizationService
-from services.data_service import DataService
+from utils.exceptions import (
+    ValidationError, 
+    OptimizationError, 
+    DataNotFoundError,
+    handle_domain_exceptions
+)
+from services.database_optimization_service import DatabaseOptimizationService
+from services.database_data_service import DatabaseDataService
 from utils.validators import validate_optimization_request
 
 api_bp = Blueprint('api', __name__)
 
-# Initialize services
-optimization_service = OptimizationService()
-data_service = DataService()
+# Initialize services with database persistence
+optimization_service = DatabaseOptimizationService()
+data_service = DatabaseDataService()
 
 
 @api_bp.route('/health', methods=['GET'])
@@ -23,77 +29,83 @@ def health():
 
 # Optimization endpoints
 @api_bp.route('/optimize', methods=['POST'])
+@handle_domain_exceptions
 def optimize():
     """Generic optimization dispatcher endpoint"""
-    try:
-        data = request.get_json()
-        if not data:
-            return error_response(
-                'VALIDATION_ERROR', 'No data provided', status=400
-            )
-        
-        method = data.get('method', 'hybrid').lower()
-        
-        # Route to specific optimization method
-        if method == 'classical':
-            return _run_classical_optimization(data)
-        elif method == 'quantum':
-            return _run_quantum_optimization(data)
-        elif method == 'hybrid':
-            return _run_hybrid_optimization(data)
-        else:
-            return error_response(
-                'INVALID_METHOD',
-                f'Invalid method: {method}. Expected classical/quantum/hybrid',
-                status=400
-            )
-    except Exception as e:  # pragma: no cover
-        return error_response(
-            'OPTIMIZATION_ERROR', 'Optimization dispatcher failed',
-            details=str(e), status=500
+    data = request.get_json(silent=True)
+    if not data:
+        raise ValidationError('No data provided')
+    
+    method = data.get('method', 'hybrid').lower()
+    
+    # Route to specific optimization method
+    if method == 'classical':
+        return _run_classical_optimization(data)
+    elif method == 'quantum':
+        return _run_quantum_optimization(data)
+    elif method == 'hybrid':
+        return _run_hybrid_optimization(data)
+    else:
+        raise ValidationError(
+            f'Invalid method: {method}. Expected classical/quantum/hybrid'
         )
 
 
 def _run_classical_optimization(data):
     """Internal classical optimization logic"""
     if not validate_optimization_request(data):
-        return error_response(
-            'VALIDATION_ERROR', 'Invalid input data', status=400
-        )
+        raise ValidationError('Invalid input data for classical optimization')
     
-    result = optimization_service.run_classical_optimization(data)
-    return success_response(
-        {'method': 'classical', 'result': result},
-        message='Optimization completed'
-    )
+    try:
+        result = optimization_service.run_classical_optimization(data)
+        return success_response(
+            {'method': 'classical', 'result': result},
+            message='Optimization completed'
+        )
+    except Exception as e:
+        raise OptimizationError(
+            'Classical optimization failed', 
+            method='classical', 
+            details={'error': str(e)}
+        )
 
 
 def _run_quantum_optimization(data):
     """Internal quantum optimization logic"""
     if not validate_optimization_request(data):
-        return error_response(
-            'VALIDATION_ERROR', 'Invalid input data', status=400
-        )
+        raise ValidationError('Invalid input data for quantum optimization')
     
-    result = optimization_service.run_quantum_optimization(data)
-    return success_response(
-        {'method': 'quantum', 'result': result},
-        message='Optimization completed'
-    )
+    try:
+        result = optimization_service.run_quantum_optimization(data)
+        return success_response(
+            {'method': 'quantum', 'result': result},
+            message='Optimization completed'
+        )
+    except Exception as e:
+        raise OptimizationError(
+            'Quantum optimization failed', 
+            method='quantum', 
+            details={'error': str(e)}
+        )
 
 
 def _run_hybrid_optimization(data):
     """Internal hybrid optimization logic"""
     if not validate_optimization_request(data):
-        return error_response(
-            'VALIDATION_ERROR', 'Invalid input data', status=400
-        )
+        raise ValidationError('Invalid input data for hybrid optimization')
     
-    result = optimization_service.run_hybrid_optimization(data)
-    return success_response(
-        {'method': 'hybrid', 'result': result},
-        message='Optimization completed'
-    )
+    try:
+        result = optimization_service.run_hybrid_optimization(data)
+        return success_response(
+            {'method': 'hybrid', 'result': result},
+            message='Optimization completed'
+        )
+    except Exception as e:
+        raise OptimizationError(
+            'Hybrid optimization failed', 
+            method='hybrid', 
+            details={'error': str(e)}
+        )
 
 
 @api_bp.route('/optimize/classical', methods=['POST'])
@@ -135,6 +147,50 @@ def optimize_hybrid():
         )
 
 
+@api_bp.route('/optimize/vrp', methods=['POST'])
+@handle_domain_exceptions
+def optimize_vrp():
+    """Run Vehicle Routing Problem (VRP) optimization"""
+    data = request.get_json(silent=True)
+    if not data:
+        raise ValidationError('No data provided')
+    
+    try:
+        result = optimization_service.run_vrp_optimization(data)
+        return success_response(
+            {'method': 'vrp', 'result': result},
+            message='VRP optimization completed'
+        )
+    except Exception as e:
+        raise OptimizationError(
+            'VRP optimization failed',
+            method='vrp',
+            details={'error': str(e)}
+        )
+
+
+@api_bp.route('/optimize/hybrid-vrp', methods=['POST'])
+@handle_domain_exceptions
+def optimize_hybrid_vrp():
+    """Run Hybrid VRP optimization (classical VRP + quantum enhancement)"""
+    data = request.get_json(silent=True)
+    if not data:
+        raise ValidationError('No data provided')
+    
+    try:
+        result = optimization_service.run_hybrid_vrp_optimization(data)
+        return success_response(
+            {'method': 'hybrid_vrp', 'result': result},
+            message='Hybrid VRP optimization completed'
+        )
+    except Exception as e:
+        raise OptimizationError(
+            'Hybrid VRP optimization failed',
+            method='hybrid_vrp',
+            details={'error': str(e)}
+        )
+
+
 @api_bp.route('/optimize/status/<job_id>', methods=['GET'])
 def optimization_status(job_id):
     """Get optimization job status"""
@@ -149,6 +205,7 @@ def optimization_status(job_id):
 
 # Data management endpoints
 @api_bp.route('/data/warehouses', methods=['GET', 'POST'])
+@handle_domain_exceptions
 def warehouses():
     """Manage warehouse data"""
     if request.method == 'GET':
@@ -164,6 +221,7 @@ def warehouses():
 
 
 @api_bp.route('/data/customers', methods=['GET', 'POST'])
+@handle_domain_exceptions
 def customers():
     """Manage customer data"""
     if request.method == 'GET':
@@ -179,6 +237,7 @@ def customers():
 
 
 @api_bp.route('/data/routes', methods=['GET', 'POST'])
+@handle_domain_exceptions
 def routes():
     """Manage route data"""
     if request.method == 'GET':
@@ -194,59 +253,45 @@ def routes():
 
 
 @api_bp.route('/data/upload', methods=['POST'])
+@handle_domain_exceptions
 def upload_data():
     """Upload CSV datasets"""
-    try:
-        if 'file' not in request.files:
-            return error_response(
-                'UPLOAD_ERROR', 'No file provided', status=400
-            )
-        file = request.files['file']
-        data_type = request.form.get('type', 'warehouses')
-        result = data_service.process_upload(file, data_type)
-        return success_response(result, message='File processed')
-    except Exception as e:  # pragma: no cover
-        return error_response(
-            'UPLOAD_ERROR', 'Upload failed', details=str(e), status=500
-        )
+    if 'file' not in request.files:
+        raise ValidationError('No file provided')
+    
+    file = request.files['file']
+    data_type = request.form.get('type', 'warehouses')
+    
+    result = data_service.process_upload(file, data_type)
+    return success_response(result, message='File processed successfully')
 
 
 @api_bp.route('/data/validate', methods=['POST'])
+@handle_domain_exceptions
 def validate_data():
     """Validate supply chain data"""
-    try:
-        data = request.get_json()
-        if not data:
-            return error_response(
-                'VALIDATION_ERROR', 'No data provided', status=400
-            )
-        validation_result = data_service.validate_data(data)
-        return success_response(
-            validation_result, message='Validation completed'
-        )
-    except Exception as e:  # pragma: no cover
-        return error_response(
-            'VALIDATION_ERROR', 'Validation failed', details=str(e), status=500
-        )
+    data = request.get_json(silent=True)
+    if not data:
+        raise ValidationError('No data provided for validation')
+    
+    validation_result = data_service.validate_data(data)
+    return success_response(
+        validation_result, message='Validation completed'
+    )
 
 
 @api_bp.route('/data/<data_type>', methods=['DELETE'])
+@handle_domain_exceptions
 def delete_data(data_type):
     """Delete specific data type"""
-    try:
-        valid_types = ['warehouses', 'customers', 'routes']
-        if data_type not in valid_types:
-            return error_response(
-                'INVALID_DATA_TYPE',
-                f'Invalid data type. Must be one of: {valid_types}',
-                status=400
-            )
-        result = data_service.delete_data(data_type)
-        return success_response(result, message='Data deleted')
-    except Exception as e:  # pragma: no cover
-        return error_response(
-            'DELETE_FAILED', 'Delete failed', details=str(e), status=500
+    valid_types = ['warehouses', 'customers', 'routes']
+    if data_type not in valid_types:
+        raise ValidationError(
+            f'Invalid data type. Must be one of: {valid_types}'
         )
+    
+    result = data_service.delete_data(data_type)
+    return success_response(result, message='Data deleted successfully')
 
 
 @api_bp.route('/data/sample', methods=['GET'])
@@ -295,30 +340,29 @@ def list_results():
 
 # Dashboard aggregation endpoint
 @api_bp.route('/dashboard', methods=['GET'])
+@handle_domain_exceptions
 def dashboard():
     """Return aggregated metrics for dashboard view.
 
     This keeps it simple for now: counts of entities and latest results.
     Extend later with performance metrics, inventory levels, etc.
     """
-    try:
-        warehouses = data_service.get_warehouses()
-        customers = data_service.get_customers()
-        routes_data = data_service.get_routes()
-        recent_results = optimization_service.list_results(limit=5)
+    warehouses = data_service.get_warehouses()
+    customers = data_service.get_customers()
+    routes_data = data_service.get_routes()
+    recent_results = optimization_service.get_recent_results(limit=5)
 
-        payload = {
-            'summary': {
-                'warehouses': len(warehouses or []),
-                'customers': len(customers or []),
-                'routes': len(routes_data or []),
-                'recentOptimizations': len(recent_results or []),
-            },
-            'recentResults': recent_results,
-        }
-        return success_response(payload)
-    except Exception as e:  # pragma: no cover
-        return error_response(
-            'DASHBOARD_ERROR', 'Failed to build dashboard data',
-            details=str(e), status=500
-        )
+    payload = {
+        'summary': {
+            'warehouses': len(warehouses or []),
+            'customers': len(customers or []),
+            'routes': len(routes_data or []),
+            'recentOptimizations': len(recent_results or []),
+        },
+        'recentResults': recent_results,
+        # Include actual data for map visualization
+        'warehouses': warehouses or [],
+        'customers': customers or [],
+        'routes': routes_data or [],
+    }
+    return success_response(payload)

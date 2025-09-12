@@ -1,0 +1,161 @@
+warehouse_id,warehouse_name,customer_id,customer_name,transport_mode,distance_km,cost_per_unit,delivery_time_days,co2_per_unit,capacity_limit,reliability
+W1,New York Hub,C1,London Store,Air,5570.22,1392.56,0.7,2506.6,2000,0.95
+W1,New York Hub,C1,London Store,Sea,5570.22,445.62,11.14,668.43,8000,0.85
+W1,New York Hub,C1,London Store,Road,5570.22,835.53,6.96,1392.56,1500,0.9
+W1,New York Hub,C1,London Store,Rail,5570.22,668.43,9.28,1002.64,3000,0.88
+W1,New York Hub,C2,Tokyo Retail,Air,10851.73,2712.93,1.36,4883.28,2000,0.95
+W1,New York Hub,C2,Tokyo Retail,Sea,10851.73,868.14,21.7,1302.21,8000,0.85
+W1,New York Hub,C2,Tokyo Retail,Road,10851.73,1627.76,13.56,2712.93,1500,0.9
+W1,New York Hub,C2,Tokyo Retail,Rail,10851.73,1302.21,18.09,1953.31,3000,0.88
+W1,New York Hub,C3,Sydney Branch,Air,15988.76,3997.19,2.0,7194.94,2000,0.95
+W1,New York Hub,C3,Sydney Branch,Sea,15988.76,1279.1,31.98,1918.65,8000,0.85
+W1,New York Hub,C3,Sydney Branch,Road,15988.76,2398.31,19.99,3997.19,1500,0.9
+W1,New York Hub,C3,Sydney Branch,Rail,15988.76,1918.65,26.65,2877.98,3000,0.88
+W1,New York Hub,C4,Berlin Outlet,Air,6385.0,1596.25,0.8,2873.25,2000,0.95
+W1,New York Hub,C4,Berlin Outlet,Sea,6385.0,510.8,12.77,766.2,8000,0.85
+W1,New York Hub,C4,Berlin Outlet,Road,6385.0,957.75,7.98,1596.25,1500,0.9
+W1,New York Hub,C4,Berlin Outlet,Rail,6385.0,766.2,10.64,1149.3,3000,0.88
+W1,New York Hub,C5,Dubai Market,Air,11008.07,2752.02,1.38,4953.63,2000,0.95
+W1,New York Hub,C5,Dubai Market,Sea,11008.07,880.65,22.02,1320.97,8000,0.85
+W1,New York Hub,C5,Dubai Market,Road,11008.07,1651.21,13.76,2752.02,1500,0.9
+W1,New York Hub,C5,Dubai Market,Rail,11008.07,1320.97,18.35,1981.45,3000,0.88
+W1,New York Hub,C6,Mexico Store,Air,3359.38,839.85,0.42,1511.72,2000,0.95
+W1,New York Hub,C6,Mexico Store,Sea,3359.38,268.75,6.72,403.13,8000,0.85
+W1,New York Hub,C6,Mexico Store,Road,3359.38,503.91,4.2,839.85,1500,0.9
+W1,New York Hub,C6,Mexico Store,Rail,3359.38,403.13,5.6,604.69,3000,0.88
+W1,New York Hub,C7,Toronto Branch,Air,550.44,137.61,0.07,247.7,2000,0.95
+W1,New York Hub,C7,Toronto Branch,Sea,550.44,44.04,1.1,66.05,8000,0.85
+W1,New York Hub,C7,Toronto Branch,Road,550.44,82.57,0.69,137.61,1500,0.9
+W1,New York Hub,C7,Toronto Branch,Rail,550.44,66.05,0.92,99.08,3000,0.88
+W1,New York Hub,C8,São Paulo Hub,Air,7685.63,1921.41,0.96,3458.53,2000,0.95
+W1,New York Hub,C8,São Paulo Hub,Sea,7685.63,614.85,15.37,922.28,8000,0.85
+W1,New York Hub,C8,São Paulo Hub,Road,7685.63,1152.84,9.61,1921.41,1500,0.9
+W1,New York Hub,C8,São Paulo Hub,Rail,7685.63,922.28,12.81,1383.41,3000,0.88
+W2,Hamburg Center,C1,London Store,Air,720.66,180.17,0.09,324.3,2000,0.95
+W2,Hamburg Center,C1,London Store,Sea,720.66,57.65,1.44,86.48,8000,0.85
+W2,Hamburg Center,C1,London Store,Road,720.66,108.1,0.9,180.17,1500,0.9
+W2,Hamburg Center,C1,London Store,Rail,720.66,86.48,1.2,129.72,3000,0.88
+W2,Hamburg Center,C2,Tokyo Retail,Air,8976.5,2244.12,1.12,4039.42,2000,0.95
+W2,Hamburg Center,C2,Tokyo Retail,Sea,8976.5,718.12,17.95,1077.18,8000,0.85
+W2,Hamburg Center,C2,Tokyo Retail,Road,8976.5,1346.47,11.22,2244.12,1500,0.9
+W2,Hamburg Center,C2,Tokyo Retail,Rail,8976.5,1077.18,14.96,1615.77,3000,0.88
+W2,Hamburg Center,C3,Sydney Branch,Air,16277.62,4069.41,2.03,7324.93,2000,0.95
+W2,Hamburg Center,C3,Sydney Branch,Sea,16277.62,1302.21,32.56,1953.31,8000,0.85
+W2,Hamburg Center,C3,Sydney Branch,Road,16277.62,2441.64,20.35,4069.41,1500,0.9
+W2,Hamburg Center,C3,Sydney Branch,Rail,16277.62,1953.31,27.13,2929.97,3000,0.88
+W2,Hamburg Center,C4,Berlin Outlet,Air,255.25,63.81,0.03,114.86,2000,0.95
+W2,Hamburg Center,C4,Berlin Outlet,Sea,255.25,20.42,0.51,30.63,8000,0.85
+W2,Hamburg Center,C4,Berlin Outlet,Road,255.25,38.29,0.32,63.81,1500,0.9
+W2,Hamburg Center,C4,Berlin Outlet,Rail,255.25,30.63,0.43,45.95,3000,0.88
+W2,Hamburg Center,C5,Dubai Market,Air,4879.09,1219.77,0.61,2195.59,2000,0.95
+W2,Hamburg Center,C5,Dubai Market,Sea,4879.09,390.33,9.76,585.49,8000,0.85
+W2,Hamburg Center,C5,Dubai Market,Road,4879.09,731.86,6.1,1219.77,1500,0.9
+W2,Hamburg Center,C5,Dubai Market,Rail,4879.09,585.49,8.13,878.24,3000,0.88
+W2,Hamburg Center,C6,Mexico Store,Air,9471.48,2367.87,1.18,4262.17,2000,0.95
+W2,Hamburg Center,C6,Mexico Store,Sea,9471.48,757.72,18.94,1136.58,8000,0.85
+W2,Hamburg Center,C6,Mexico Store,Road,9471.48,1420.72,11.84,2367.87,1500,0.9
+W2,Hamburg Center,C6,Mexico Store,Rail,9471.48,1136.58,15.79,1704.87,3000,0.88
+W2,Hamburg Center,C7,Toronto Branch,Air,6221.2,1555.3,0.78,2799.54,2000,0.95
+W2,Hamburg Center,C7,Toronto Branch,Sea,6221.2,497.7,12.44,746.54,8000,0.85
+W2,Hamburg Center,C7,Toronto Branch,Road,6221.2,933.18,7.78,1555.3,1500,0.9
+W2,Hamburg Center,C7,Toronto Branch,Rail,6221.2,746.54,10.37,1119.82,3000,0.88
+W2,Hamburg Center,C8,São Paulo Hub,Air,10146.5,2536.63,1.27,4565.93,2000,0.95
+W2,Hamburg Center,C8,São Paulo Hub,Sea,10146.5,811.72,20.29,1217.58,8000,0.85
+W2,Hamburg Center,C8,São Paulo Hub,Road,10146.5,1521.98,12.68,2536.63,1500,0.9
+W2,Hamburg Center,C8,São Paulo Hub,Rail,10146.5,1217.58,16.91,1826.37,3000,0.88
+W3,Singapore Port,C1,London Store,Air,10847.84,2711.96,1.36,4881.53,2000,0.95
+W3,Singapore Port,C1,London Store,Sea,10847.84,867.83,21.7,1301.74,8000,0.85
+W3,Singapore Port,C1,London Store,Road,10847.84,1627.18,13.56,2711.96,1500,0.9
+W3,Singapore Port,C1,London Store,Rail,10847.84,1301.74,18.08,1952.61,3000,0.88
+W3,Singapore Port,C2,Tokyo Retail,Air,5311.22,1327.81,0.66,2390.05,2000,0.95
+W3,Singapore Port,C2,Tokyo Retail,Sea,5311.22,424.9,10.62,637.35,8000,0.85
+W3,Singapore Port,C2,Tokyo Retail,Road,5311.22,796.68,6.64,1327.81,1500,0.9
+W3,Singapore Port,C2,Tokyo Retail,Rail,5311.22,637.35,8.85,956.02,3000,0.88
+W3,Singapore Port,C3,Sydney Branch,Air,6306.25,1576.56,0.79,2837.81,2000,0.95
+W3,Singapore Port,C3,Sydney Branch,Sea,6306.25,504.5,12.61,756.75,8000,0.85
+W3,Singapore Port,C3,Sydney Branch,Road,6306.25,945.94,7.88,1576.56,1500,0.9
+W3,Singapore Port,C3,Sydney Branch,Rail,6306.25,756.75,10.51,1135.13,3000,0.88
+W3,Singapore Port,C4,Berlin Outlet,Air,9916.3,2479.07,1.24,4462.33,2000,0.95
+W3,Singapore Port,C4,Berlin Outlet,Sea,9916.3,793.3,19.83,1189.96,8000,0.85
+W3,Singapore Port,C4,Berlin Outlet,Road,9916.3,1487.44,12.4,2479.07,1500,0.9
+W3,Singapore Port,C4,Berlin Outlet,Rail,9916.3,1189.96,16.53,1784.93,3000,0.88
+W3,Singapore Port,C5,Dubai Market,Air,5837.14,1459.29,0.73,2626.71,2000,0.95
+W3,Singapore Port,C5,Dubai Market,Sea,5837.14,466.97,11.67,700.46,8000,0.85
+W3,Singapore Port,C5,Dubai Market,Road,5837.14,875.57,7.3,1459.29,1500,0.9
+W3,Singapore Port,C5,Dubai Market,Rail,5837.14,700.46,9.73,1050.69,3000,0.88
+W3,Singapore Port,C6,Mexico Store,Air,16606.7,4151.68,2.08,7473.02,2000,0.95
+W3,Singapore Port,C6,Mexico Store,Sea,16606.7,1328.54,33.21,1992.8,8000,0.85
+W3,Singapore Port,C6,Mexico Store,Road,16606.7,2491.01,20.76,4151.68,1500,0.9
+W3,Singapore Port,C6,Mexico Store,Rail,16606.7,1992.8,27.68,2989.21,3000,0.88
+W3,Singapore Port,C7,Toronto Branch,Air,15000.55,3750.14,1.88,6750.25,2000,0.95
+W3,Singapore Port,C7,Toronto Branch,Sea,15000.55,1200.04,30.0,1800.07,8000,0.85
+W3,Singapore Port,C7,Toronto Branch,Road,15000.55,2250.08,18.75,3750.14,1500,0.9
+W3,Singapore Port,C7,Toronto Branch,Rail,15000.55,1800.07,25.0,2700.1,3000,0.88
+W3,Singapore Port,C8,São Paulo Hub,Air,15987.01,3996.75,2.0,7194.15,2000,0.95
+W3,Singapore Port,C8,São Paulo Hub,Sea,15987.01,1278.96,31.97,1918.44,8000,0.85
+W3,Singapore Port,C8,São Paulo Hub,Road,15987.01,2398.05,19.98,3996.75,1500,0.9
+W3,Singapore Port,C8,São Paulo Hub,Rail,15987.01,1918.44,26.65,2877.66,3000,0.88
+W4,Mumbai Gateway,C1,London Store,Air,7191.7,1797.92,0.9,3236.26,2000,0.95
+W4,Mumbai Gateway,C1,London Store,Sea,7191.7,575.34,14.38,863.0,8000,0.85
+W4,Mumbai Gateway,C1,London Store,Road,7191.7,1078.75,8.99,1797.92,1500,0.9
+W4,Mumbai Gateway,C1,London Store,Rail,7191.7,863.0,11.99,1294.51,3000,0.88
+W4,Mumbai Gateway,C2,Tokyo Retail,Air,6720.31,1680.08,0.84,3024.14,2000,0.95
+W4,Mumbai Gateway,C2,Tokyo Retail,Sea,6720.31,537.62,13.44,806.44,8000,0.85
+W4,Mumbai Gateway,C2,Tokyo Retail,Road,6720.31,1008.05,8.4,1680.08,1500,0.9
+W4,Mumbai Gateway,C2,Tokyo Retail,Rail,6720.31,806.44,11.2,1209.66,3000,0.88
+W4,Mumbai Gateway,C3,Sydney Branch,Air,10156.82,2539.2,1.27,4570.57,2000,0.95
+W4,Mumbai Gateway,C3,Sydney Branch,Sea,10156.82,812.55,20.31,1218.82,8000,0.85
+W4,Mumbai Gateway,C3,Sydney Branch,Road,10156.82,1523.52,12.7,2539.2,1500,0.9
+W4,Mumbai Gateway,C3,Sydney Branch,Rail,10156.82,1218.82,16.93,1828.23,3000,0.88
+W4,Mumbai Gateway,C4,Berlin Outlet,Air,6286.15,1571.54,0.79,2828.77,2000,0.95
+W4,Mumbai Gateway,C4,Berlin Outlet,Sea,6286.15,502.89,12.57,754.34,8000,0.85
+W4,Mumbai Gateway,C4,Berlin Outlet,Road,6286.15,942.92,7.86,1571.54,1500,0.9
+W4,Mumbai Gateway,C4,Berlin Outlet,Rail,6286.15,754.34,10.48,1131.51,3000,0.88
+W4,Mumbai Gateway,C5,Dubai Market,Air,1935.09,483.77,0.24,870.79,2000,0.95
+W4,Mumbai Gateway,C5,Dubai Market,Sea,1935.09,154.81,3.87,232.21,8000,0.85
+W4,Mumbai Gateway,C5,Dubai Market,Road,1935.09,290.26,2.42,483.77,1500,0.9
+W4,Mumbai Gateway,C5,Dubai Market,Rail,1935.09,232.21,3.23,348.32,3000,0.88
+W4,Mumbai Gateway,C6,Mexico Store,Air,15645.37,3911.34,1.96,7040.42,2000,0.95
+W4,Mumbai Gateway,C6,Mexico Store,Sea,15645.37,1251.63,31.29,1877.44,8000,0.85
+W4,Mumbai Gateway,C6,Mexico Store,Road,15645.37,2346.81,19.56,3911.34,1500,0.9
+W4,Mumbai Gateway,C6,Mexico Store,Rail,15645.37,1877.44,26.08,2816.17,3000,0.88
+W4,Mumbai Gateway,C7,Toronto Branch,Air,12488.26,3122.07,1.56,5619.72,2000,0.95
+W4,Mumbai Gateway,C7,Toronto Branch,Sea,12488.26,999.06,24.98,1498.59,8000,0.85
+W4,Mumbai Gateway,C7,Toronto Branch,Road,12488.26,1873.24,15.61,3122.07,1500,0.9
+W4,Mumbai Gateway,C7,Toronto Branch,Rail,12488.26,1498.59,20.81,2247.89,3000,0.88
+W4,Mumbai Gateway,C8,São Paulo Hub,Air,13774.01,3443.5,1.72,6198.3,2000,0.95
+W4,Mumbai Gateway,C8,São Paulo Hub,Sea,13774.01,1101.92,27.55,1652.88,8000,0.85
+W4,Mumbai Gateway,C8,São Paulo Hub,Road,13774.01,2066.1,17.22,3443.5,1500,0.9
+W4,Mumbai Gateway,C8,São Paulo Hub,Rail,13774.01,1652.88,22.96,2479.32,3000,0.88
+W5,Los Angeles Depot,C1,London Store,Air,8755.6,2188.9,1.09,3940.02,2000,0.95
+W5,Los Angeles Depot,C1,London Store,Sea,8755.6,700.45,17.51,1050.67,8000,0.85
+W5,Los Angeles Depot,C1,London Store,Road,8755.6,1313.34,10.94,2188.9,1500,0.9
+W5,Los Angeles Depot,C1,London Store,Rail,8755.6,1050.67,14.59,1576.01,3000,0.88
+W5,Los Angeles Depot,C2,Tokyo Retail,Air,8819.39,2204.85,1.1,3968.73,2000,0.95
+W5,Los Angeles Depot,C2,Tokyo Retail,Sea,8819.39,705.55,17.64,1058.33,8000,0.85
+W5,Los Angeles Depot,C2,Tokyo Retail,Road,8819.39,1322.91,11.02,2204.85,1500,0.9
+W5,Los Angeles Depot,C2,Tokyo Retail,Rail,8819.39,1058.33,14.7,1587.49,3000,0.88
+W5,Los Angeles Depot,C3,Sydney Branch,Air,12073.51,3018.38,1.51,5433.08,2000,0.95
+W5,Los Angeles Depot,C3,Sydney Branch,Sea,12073.51,965.88,24.15,1448.82,8000,0.85
+W5,Los Angeles Depot,C3,Sydney Branch,Road,12073.51,1811.03,15.09,3018.38,1500,0.9
+W5,Los Angeles Depot,C3,Sydney Branch,Rail,12073.51,1448.82,20.12,2173.23,3000,0.88
+W5,Los Angeles Depot,C4,Berlin Outlet,Air,9309.68,2327.42,1.16,4189.35,2000,0.95
+W5,Los Angeles Depot,C4,Berlin Outlet,Sea,9309.68,744.77,18.62,1117.16,8000,0.85
+W5,Los Angeles Depot,C4,Berlin Outlet,Road,9309.68,1396.45,11.64,2327.42,1500,0.9
+W5,Los Angeles Depot,C4,Berlin Outlet,Rail,9309.68,1117.16,15.52,1675.74,3000,0.88
+W5,Los Angeles Depot,C5,Dubai Market,Air,13390.51,3347.63,1.67,6025.73,2000,0.95
+W5,Los Angeles Depot,C5,Dubai Market,Sea,13390.51,1071.24,26.78,1606.86,8000,0.85
+W5,Los Angeles Depot,C5,Dubai Market,Road,13390.51,2008.58,16.74,3347.63,1500,0.9
+W5,Los Angeles Depot,C5,Dubai Market,Rail,13390.51,1606.86,22.32,2410.29,3000,0.88
+W5,Los Angeles Depot,C6,Mexico Store,Air,2490.48,622.62,0.31,1120.72,2000,0.95
+W5,Los Angeles Depot,C6,Mexico Store,Sea,2490.48,199.24,4.98,298.86,8000,0.85
+W5,Los Angeles Depot,C6,Mexico Store,Road,2490.48,373.57,3.11,622.62,1500,0.9
+W5,Los Angeles Depot,C6,Mexico Store,Rail,2490.48,298.86,4.15,448.29,3000,0.88
+W5,Los Angeles Depot,C7,Toronto Branch,Air,3494.38,873.59,0.44,1572.47,2000,0.95
+W5,Los Angeles Depot,C7,Toronto Branch,Sea,3494.38,279.55,6.99,419.33,8000,0.85
+W5,Los Angeles Depot,C7,Toronto Branch,Road,3494.38,524.16,4.37,873.59,1500,0.9
+W5,Los Angeles Depot,C7,Toronto Branch,Rail,3494.38,419.33,5.82,628.99,3000,0.88
+W5,Los Angeles Depot,C8,São Paulo Hub,Air,9906.37,2476.59,1.24,4457.87,2000,0.95
+W5,Los Angeles Depot,C8,São Paulo Hub,Sea,9906.37,792.51,19.81,1188.76,8000,0.85
+W5,Los Angeles Depot,C8,São Paulo Hub,Road,9906.37,1485.96,12.38,2476.59,1500,0.9
+W5,Los Angeles Depot,C8,São Paulo Hub,Rail,9906.37,1188.76,16.51,1783.15,3000,0.88
