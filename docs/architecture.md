@@ -2,14 +2,14 @@
 
 ## Overview
 
-The Hybrid Quantum-Classical Supply Chain Optimization system is built on a **microservices architecture** that combines modern web technologies with cutting-edge quantum computing algorithms. The system is designed for scalability, maintainability, and performance.
+The Hybrid Quantum-Classical Supply Chain Optimization system that combines modern web technologies with cutting-edge quantum computing algorithms. The system is designed for scalability, maintainability, and performance.
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Load Balancer                            │
-│                    (Nginx/CloudFlare)                          │
+│                                                                 │
 └─────────────────┬───────────────────┬───────────────────────────┘
                   │                   │
         ┌─────────▼──────────┐      ┌─▼─────────────────────────┐

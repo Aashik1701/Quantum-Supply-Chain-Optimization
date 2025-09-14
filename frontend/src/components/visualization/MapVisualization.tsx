@@ -47,6 +47,7 @@ const GoogleMap: React.FC<{
       const center = { lat: 39.8283, lng: -98.5795 }
       
       // Calculate bounds if we have data
+      const mapId = import.meta.env.VITE_GOOGLE_MAP_ID as string | undefined
       if (warehouses.length > 0 || customers.length > 0) {
         const bounds = new google.maps.LatLngBounds()
         warehouses.forEach(w => bounds.extend({ lat: w.latitude, lng: w.longitude }))
@@ -56,51 +57,21 @@ const GoogleMap: React.FC<{
           zoom: 6,
           center,
           mapTypeId: 'roadmap',
-          styles: [
-            {
-              "elementType": "geometry",
-              "stylers": [{ "color": "#1f2937" }]
-            },
-            {
-              "elementType": "labels.text.stroke",
-              "stylers": [{ "color": "#1f2937" }]
-            },
-            {
-              "elementType": "labels.text.fill",
-              "stylers": [{ "color": "#8b9dc3" }]
-            },
-            {
-              "featureType": "administrative.locality",
-              "elementType": "labels.text.fill",
-              "stylers": [{ "color": "#d59563" }]
-            },
-            {
-              "featureType": "road",
-              "elementType": "geometry",
-              "stylers": [{ "color": "#38444d" }]
-            },
-            {
-              "featureType": "water",
-              "elementType": "geometry",
-              "stylers": [{ "color": "#0f172a" }]
-            }
-          ]
+          ...(mapId ? { mapId } : {})
         })
         
-        // Add warehouse markers (blue)
+        // Add warehouse markers (blue) using AdvancedMarkerElement
         warehouses.forEach(warehouse => {
-          const marker = new google.maps.Marker({
+          const pin = new (google as any).maps.marker.PinElement({
+            background: '#3b82f6',
+            borderColor: '#1e40af',
+            glyphColor: '#ffffff'
+          })
+          const marker = new (google as any).maps.marker.AdvancedMarkerElement({
             position: { lat: warehouse.latitude, lng: warehouse.longitude },
             map: newMap,
             title: `${warehouse.name} (Capacity: ${warehouse.capacity})`,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: '#3b82f6',
-              fillOpacity: 0.8,
-              strokeColor: '#1e40af',
-              strokeWeight: 2,
-            }
+            content: pin.element
           })
 
           const infoWindow = new google.maps.InfoWindow({
@@ -114,24 +85,22 @@ const GoogleMap: React.FC<{
           })
 
           marker.addListener('click', () => {
-            infoWindow.open(newMap, marker)
+            infoWindow.open({ map: newMap, anchor: marker })
           })
         })
 
-        // Add customer markers (red)
+        // Add customer markers (red) using AdvancedMarkerElement
         customers.forEach(customer => {
-          const marker = new google.maps.Marker({
+          const pin = new (google as any).maps.marker.PinElement({
+            background: '#ef4444',
+            borderColor: '#dc2626',
+            glyphColor: '#ffffff'
+          })
+          const marker = new (google as any).maps.marker.AdvancedMarkerElement({
             position: { lat: customer.latitude, lng: customer.longitude },
             map: newMap,
             title: `${customer.name} (Demand: ${customer.demand})`,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 6,
-              fillColor: '#ef4444',
-              fillOpacity: 0.8,
-              strokeColor: '#dc2626',
-              strokeWeight: 2,
-            }
+            content: pin.element
           })
 
           const infoWindow = new google.maps.InfoWindow({
@@ -145,7 +114,7 @@ const GoogleMap: React.FC<{
           })
 
           marker.addListener('click', () => {
-            infoWindow.open(newMap, marker)
+            infoWindow.open({ map: newMap, anchor: marker })
           })
         })
 
@@ -191,6 +160,7 @@ const GoogleMap: React.FC<{
           zoom: 4,
           center,
           mapTypeId: 'roadmap',
+          ...(mapId ? { mapId } : {})
         })
         setMap(newMap)
       }
@@ -250,7 +220,7 @@ const MapVisualization: React.FC<Props> = ({
 
   return (
     <div className="w-full h-full">
-      <Wrapper apiKey={apiKey} render={render} />
+  <Wrapper apiKey={apiKey} render={render} libraries={["marker"]} />
       
       {/* Legend */}
       <div className="absolute top-4 right-4 bg-slate-800/90 backdrop-blur-sm rounded-lg p-3 border border-slate-600">

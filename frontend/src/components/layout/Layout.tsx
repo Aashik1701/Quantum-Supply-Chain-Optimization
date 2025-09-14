@@ -1,12 +1,24 @@
 import React from 'react'
+import BackgroundVideo from './BackgroundVideo'
+import { useLocation } from 'react-router-dom'
+import { getBackgroundForPath } from '@/config/pageBackgrounds'
 
 interface LayoutProps {
   children: React.ReactNode
+  /** Optional background video URL for the entire page */
+  bgVideoSrc?: string
+  /** Add a dark overlay when bg video is enabled */
+  bgVideoOverlay?: boolean
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, bgVideoSrc, bgVideoOverlay = false }) => {
+  const location = useLocation()
+  const autoBg = getBackgroundForPath(location.pathname)
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="relative min-h-screen bg-slate-900 overflow-hidden">
+      {(bgVideoSrc || autoBg) && (
+        <BackgroundVideo src={bgVideoSrc || autoBg!} withOverlay={bgVideoOverlay || true} />
+      )}
       <header className="bg-slate-800 shadow-lg border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -26,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </header>
       
-      <main className="flex-1 bg-slate-900">
+      <main className="relative flex-1 bg-slate-900 z-10">
         {children}
       </main>
       
