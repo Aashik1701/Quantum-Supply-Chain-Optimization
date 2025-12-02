@@ -85,6 +85,25 @@ services:
       - redis_data:/data
     ports:
       - "6379:6379"
+      # Background RQ Worker
+      worker:
+        build:
+          context: ./backend
+          dockerfile: Dockerfile
+        container_name: quantum-supply-chain-worker
+        restart: unless-stopped
+        environment:
+          - FLASK_ENV=development
+          - DATABASE_URL=postgresql://postgres:password@postgres:5432/supply_chain
+          - REDIS_URL=redis://redis:6379/0
+        command: sh -c "python -m rq worker -u $REDIS_URL optimization"
+        volumes:
+          - ./backend:/app
+        depends_on:
+          - postgres
+          - redis
+        networks:
+          - quantum-network
     networks:
       - quantum-network
     healthcheck:

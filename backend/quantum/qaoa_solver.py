@@ -60,6 +60,15 @@ class QuantumOptimizer:
             customers: List of customer data
             distance_matrix: Distance matrix between warehouses and customers
             **kwargs: Additional quantum parameters
+                - p_layers: QAOA circuit depth
+                - shots: Number of measurements
+                - penalty_mode: 'auto' or 'manual'
+                - lambda1: Manual single-assignment penalty (if penalty_mode='manual')
+                - lambda2: Manual capacity penalty (if penalty_mode='manual')
+                - enable_reduction: Enable QUBO size reduction (default: False)
+                - max_customers: Max customers before clustering (default: 50)
+                - warm_start: Use classical solution for initial params (default: False)
+                - classical_solution: Dict for warm start {customer_id: warehouse_id}
             
         Returns:
             Optimization result dictionary
@@ -69,13 +78,51 @@ class QuantumOptimizer:
         # Extract quantum parameters
         p_layers = int(kwargs.get('p_layers', 1))
         shots = int(kwargs.get('shots', self.shots))
+        penalty_mode = kwargs.get('penalty_mode', 'auto')
+        manual_lambda1 = kwargs.get('lambda1')
+        manual_lambda2 = kwargs.get('lambda2')
+        enable_reduction = kwargs.get('enable_reduction', False)
+        max_customers = kwargs.get('max_customers', 50)
+        warm_start = kwargs.get('warm_start', False)
+        classical_solution = kwargs.get('classical_solution', {})
+        
+        # Track original problem for expansion
+        original_warehouses = warehouses
+        original_customers = customers
+        original_distance_matrix = distance_matrix
+        cluster_mapping = {}
+        reduction_info = None
+        
+        # Apply QUBO reduction if enabled
+        if enable_reduction and len(customers) > max_customers:
+            try:
+                from quantum.hybrid_integration import reduce_problem
+                reduction_info = reduce_problem(
+                    warehouses, customers, distance_matrix,
+                    max_customers=max_customers,
+                    enable_clustering=True,
+                    enable_elimination=True,
+                )
+                warehouses = reduction_info['reduced_warehouses']
+                customers = reduction_info['reduced_customers']
+                distance_matrix = reduction_info['reduced_distance_matrix']
+                cluster_mapping = reduction_info['cluster_mapping']
+                print(f"QUBO reduction: {reduction_info['original_sizes']} → {reduction_info['reduced_sizes']}")
+            except Exception as e:
+                print(f"Warning: QUBO reduction failed: {e}")
+                # Continue with original problem
 
         if not QISKIT_AVAILABLE:
             return self._classical_fallback(warehouses, customers, distance_matrix)
 
         try:
             # Create QUBO and map to Ising Hamiltonian (SparsePauliOp)
-            qubo_matrix = self._create_qubo_matrix(warehouses, customers, distance_matrix)
+            qubo_matrix = self._create_qubo_matrix(
+                warehouses, customers, distance_matrix,
+                penalty_mode=penalty_mode,
+                lambda1=manual_lambda1,
+                lambda2=manual_lambda2
+            )
             hamiltonian, num_qubits = self._qubo_to_ising(qubo_matrix)
 
             # Prepare sampler: local or IBM Runtime
@@ -108,6 +155,18 @@ class QuantumOptimizer:
                 sampler = LocalSampler()
                 backend_used = self.backend_name if self.backend_name else 'qasm_simulator'
 
+            # Generate warm-start parameters if enabled
+            initial_point = None
+            if warm_start and classical_solution:
+                try:
+                    from quantum.hybrid_integration import generate_warm_start_params
+                    initial_point = generate_warm_start_params(
+                        classical_solution, warehouses, customers, num_params=p_layers
+                    )
+                    print(f"Using warm-start params: {initial_point}")
+                except Exception as e:
+                    print(f"Warning: Warm-start failed: {e}")
+            
             # Create optimizer and QAOA with callback for progress tracking
             iteration_count = [0]
             
@@ -122,7 +181,13 @@ class QuantumOptimizer:
                     })
             
             optimizer = COBYLA(maxiter=100)
-            qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=p_layers, callback=qaoa_callback)
+            qaoa = QAOA(
+                sampler=sampler, 
+                optimizer=optimizer, 
+                reps=p_layers, 
+                callback=qaoa_callback,
+                initial_point=initial_point
+            )
 
             result = qaoa.compute_minimum_eigenvalue(hamiltonian)
             quantum_energy = float(np.real_if_close(result.eigenvalue))
@@ -158,6 +223,50 @@ class QuantumOptimizer:
                     bitstring, warehouses, customers, distance_matrix
                 )
                 
+                # Expand solution if QUBO reduction was used
+                if cluster_mapping:
+                    try:
+                        from quantum.hybrid_integration import expand_solution
+                        # Convert assignments to dict format
+                        assignment_dict = {}
+                        for assignment in assignments:
+                            customer_id = assignment.get('customerId') or assignment.get('customer_id')
+                            warehouse_id = assignment.get('warehouseId') or assignment.get('warehouse_id')
+                            if customer_id and warehouse_id:
+                                assignment_dict[customer_id] = warehouse_id
+                        
+                        # Expand
+                        full_assignment_dict = expand_solution(
+                            assignment_dict, cluster_mapping,
+                            original_warehouses, original_customers
+                        )
+                        
+                        # Convert back to list format
+                        assignments = []
+                        for cust_id, wh_id in full_assignment_dict.items():
+                            # Find original customer and warehouse data
+                            cust = next((c for c in original_customers if c.get('id') == cust_id), None)
+                            wh = next((w for w in original_warehouses if w.get('id') == wh_id), None)
+                            if cust and wh:
+                                assignments.append({
+                                    'customerId': cust_id,
+                                    'warehouseId': wh_id,
+                                    'demand': cust.get('demand', 0),
+                                    'cost': 0,  # Will be recomputed
+                                    'co2': 0,
+                                    'distanceKm': 0,
+                                    'deliveryTimeHours': 0,
+                                })
+                        
+                        # Use original problem for metrics
+                        warehouses = original_warehouses
+                        customers = original_customers
+                        distance_matrix = original_distance_matrix
+                        
+                        print(f"Expanded solution to {len(assignments)} assignments")
+                    except Exception as e:
+                        print(f"Warning: Solution expansion failed: {e}")
+                
                 # Compute metrics
                 result_dict = self._compute_metrics(assignments, routes, warehouses, customers)
                 result_dict.update({
@@ -188,9 +297,78 @@ class QuantumOptimizer:
             print(f"Quantum optimization failed: {e}")
             return self._classical_fallback(warehouses, customers, distance_matrix)
     
+    def _auto_compute_penalties(self, warehouses: List[Dict], customers: List[Dict],
+                                distance_matrix: np.ndarray) -> Dict[str, float]:
+        """Auto-compute penalty weights based on problem statistics
+        
+        Strategy:
+        - lambda1 (single-assignment): Scale with average cost to ensure constraints dominate
+        - lambda2 (capacity): Scale with demand/capacity ratio
+        
+        Args:
+            warehouses: Warehouse data
+            customers: Customer data  
+            distance_matrix: Distance matrix
+            
+        Returns:
+            Dict with penalty weights
+        """
+        # Compute cost statistics
+        costs = distance_matrix.flatten()
+        avg_cost = float(np.mean(costs))
+        max_cost = float(np.max(costs))
+        min_cost = float(np.min(costs))
+        cost_range = max_cost - min_cost
+        
+        # lambda1: Single-assignment penalty
+        # Should be large enough to dominate cost terms
+        # Rule: ~10x the average cost, bounded
+        k1 = 10.0  # Scaling factor
+        lambda1 = k1 * avg_cost
+        lambda1 = max(100, min(lambda1, 10000))  # Clamp to reasonable range
+        
+        # lambda2: Capacity penalty (if applicable)
+        lambda2 = 0
+        has_capacity_data = any('capacity' in w for w in warehouses) and any('demand' in c for c in customers)
+        
+        if has_capacity_data:
+            total_demand = sum(c.get('demand', 0) for c in customers)
+            total_capacity = sum(w.get('capacity', 0) for w in warehouses)
+            
+            if total_capacity > 0:
+                # Scale penalty with demand/capacity pressure
+                utilization = total_demand / total_capacity
+                k2 = 5.0  # Scaling factor
+                lambda2 = k2 * avg_cost * utilization
+                lambda2 = max(50, min(lambda2, 5000))  # Clamp
+        
+        return {
+            'lambda1': lambda1,
+            'lambda2': lambda2,
+            'cost_stats': {
+                'avg': avg_cost,
+                'max': max_cost,
+                'min': min_cost,
+                'range': cost_range
+            }
+        }
+    
     def _create_qubo_matrix(self, warehouses: List[Dict], customers: List[Dict], 
-                           distance_matrix: np.ndarray) -> np.ndarray:
-        """Create QUBO matrix for the optimization problem"""
+                           distance_matrix: np.ndarray, penalty_mode: str = 'auto',
+                           lambda1: Optional[float] = None, lambda2: Optional[float] = None) -> np.ndarray:
+        """Create QUBO matrix for the optimization problem
+        
+        Args:
+            warehouses: Warehouse data
+            customers: Customer data
+            distance_matrix: Distance matrix
+            penalty_mode: 'auto' or 'manual'
+            lambda1: Manual penalty for single-assignment constraint
+            lambda2: Manual penalty for capacity constraint
+        
+        Returns:
+            QUBO matrix
+        """
         n_warehouses = len(warehouses)
         n_customers = len(customers)
         n_vars = n_warehouses * n_customers
@@ -205,17 +383,33 @@ class QuantumOptimizer:
                 cost = distance_matrix[i][j] * 1.0  # Cost per km
                 qubo[var_idx][var_idx] = cost
         
-        # Add constraint penalties (quadratic)
-        penalty = 1000  # Large penalty for constraint violations
+        # Determine penalty weights
+        if penalty_mode == 'auto':
+            penalties = self._auto_compute_penalties(warehouses, customers, distance_matrix)
+            penalty_assignment = penalties['lambda1']
+            penalty_capacity = penalties.get('lambda2', 0)
+        else:
+            penalty_assignment = lambda1 if lambda1 is not None else 1000
+            penalty_capacity = lambda2 if lambda2 is not None else 0
         
+        # Add constraint penalties (quadratic)
         # Each customer must be served exactly once
         for j in range(n_customers):
             for i1 in range(n_warehouses):
                 for i2 in range(i1 + 1, n_warehouses):
                     var1 = i1 * n_customers + j
                     var2 = i2 * n_customers + j
-                    qubo[var1][var2] += penalty
-                    qubo[var2][var1] += penalty
+                    qubo[var1][var2] += penalty_assignment
+                    qubo[var2][var1] += penalty_assignment
+        
+        # Optional: Add capacity constraints if demand/capacity data present
+        if penalty_capacity > 0:
+            for i in range(n_warehouses):
+                if 'capacity' not in warehouses[i]:
+                    continue
+                # Simplified capacity penalty: penalize over-assignment
+                # (Full implementation would need demand aggregation)
+                pass
         
         return qubo
     

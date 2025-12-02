@@ -230,9 +230,21 @@ class DatabaseDataService:
                     f"total demand ({total_demand})"
                 )
         
+        # Convert ValidationError objects to dicts for JSON serialization
+        error_dicts = []
+        for err in errors:
+            if hasattr(err, 'model_dump'):
+                error_dicts.append(err.model_dump())
+            elif hasattr(err, 'dict'):
+                error_dicts.append(err.dict())
+            elif isinstance(err, dict):
+                error_dicts.append(err)
+            else:
+                error_dicts.append({'message': str(err)})
+        
         return ValidationResponse(
             valid=len(errors) == 0,
-            errors=errors,
+            errors=error_dicts,
             warnings=warnings,
             summary={
                 'warehouses': len(warehouses),

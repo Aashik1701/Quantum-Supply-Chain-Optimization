@@ -23,7 +23,14 @@ def create_app(config_class=Config):
     CORS(app, origins=app.config.get(
         'CORS_ORIGINS', ['http://localhost:3000']
     ))
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    # Enable Redis message queue for cross-process emits (worker -> server)
+    redis_url = os.environ.get('REDIS_URL')
+    socketio = SocketIO(
+        app,
+        cors_allowed_origins="*",
+        async_mode='threading',
+        message_queue=redis_url if redis_url else None,
+    )
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 

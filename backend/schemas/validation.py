@@ -197,8 +197,8 @@ class ValidationError(BaseModel):
 
 class ValidationResponse(BaseModel):
     valid: bool = Field(..., description="Whether data is valid")
-    errors: List[ValidationError] = Field([], description="List of validation errors")
-    warnings: List[str] = Field([], description="List of warnings")
+    errors: List[Any] = Field(default_factory=list, description="List of validation errors")
+    warnings: List[str] = Field(default_factory=list, description="List of warnings")
     summary: Dict[str, int] = Field(..., description="Summary statistics")
     
     model_config = ConfigDict(from_attributes=True)

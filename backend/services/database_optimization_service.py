@@ -7,7 +7,7 @@ import numpy as np
 import subprocess
 import json
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from contextlib import contextmanager
 
 from config.database import get_db
@@ -37,6 +37,66 @@ class DatabaseOptimizationService:
         self.lp_solver = ClassicalOptimizer()
         self.qaoa_solver = QuantumOptimizer()
         self.socketio = socketio
+        # Lazy import to avoid hard dependency if not using batch mode
+        self._rq_queue = None
+        self._redis_url = os.environ.get('REDIS_URL')
+
+    def _get_rq_queue(self):
+        """Get or create RQ queue instance"""
+        if self._rq_queue is None:
+            try:
+                from rq import Queue
+                from redis import Redis
+                redis_conn = Redis.from_url(self._redis_url) if self._redis_url else Redis()
+                self._rq_queue = Queue('optimization', connection=redis_conn)
+            except Exception as e:
+                logger.warning(f"RQ not available: {e}")
+                self._rq_queue = None
+        return self._rq_queue
+
+    def enqueue_quantum_job(
+        self,
+        data: Dict[str, Any],
+        backend_policy: str = 'simulator',
+        backend_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Enqueue quantum optimization job to background worker.
+
+        Returns a payload with the job id for client to track.
+        """
+        with self._get_session() as session:
+            job_repo = OptimizationJobRepository(session)
+
+            # Create job as pending
+            job = job_repo.create(
+                method=OptimizationMethod.QUANTUM,
+                input_data=data,
+                parameters={**data, 'backendPolicy': backend_policy, 'backendName': backend_name}
+            )
+
+            # Enqueue RQ task
+            queue = self._get_rq_queue()
+            if not queue:
+                raise OptimizationError('Background queue not available')
+
+            from worker import process_quantum_job
+            rq_job = queue.enqueue(
+                process_quantum_job,
+                str(job.id),
+                data,
+                backend_policy,
+                backend_name,
+                job_timeout=60 * 30,
+            )
+
+            # Update to running (worker will update further)
+            job_repo.update_status(job.id, JobStatus.RUNNING)
+
+            return {
+                'job_id': str(job.id),
+                'rq_id': rq_job.id,
+                'status': 'enqueued'
+            }
 
     @contextmanager
     def _get_session(self):
@@ -216,10 +276,20 @@ class DatabaseOptimizationService:
                         progress_callback=progress_callback
                     )
                 
+                # Extract reduction and warm-start parameters
+                enable_reduction = data.get('enable_reduction', data.get('enableReduction', False))
+                max_customers = data.get('max_customers', data.get('maxCustomers', 50))
+                warm_start = data.get('warm_start', data.get('warmStart', False))
+                classical_solution = data.get('classical_solution', data.get('classicalSolution', {}))
+                
                 result_data = optimizer.optimize(
                     warehouses=warehouses,
                     customers=customers,
                     distance_matrix=distance_matrix,
+                    enable_reduction=enable_reduction,
+                    max_customers=max_customers,
+                    warm_start=warm_start,
+                    classical_solution=classical_solution,
                 )
 
                 # Create result record
@@ -562,12 +632,13 @@ class DatabaseOptimizationService:
                 if not job:
                     raise OptimizationError(f"Job {job_id} not found")
 
+                last_update = job.completed_at or job.started_at or job.created_at
                 status = {
                     'job_id': str(job.id),
                     'status': job.status.value,
                     'method': job.method.value,
                     'created_at': job.created_at.isoformat(),
-                    'updated_at': job.updated_at.isoformat()
+                    'updated_at': last_update.isoformat() if last_update else None,
                 }
 
                 if job.error_message:
@@ -578,9 +649,13 @@ class DatabaseOptimizationService:
                     result_repo = OptimizationResultRepository(session)
                     result = result_repo.get_by_job_id(job.id)
                     if result:
-                        status['result'] = result.result_data
+                        status['result'] = {
+                            'routes': result.routes_data,
+                            'assignments': result.assignments_data,
+                            'performanceMetrics': result.performance_metrics,
+                        }
                         status['total_cost'] = result.total_cost
-                        status['execution_time'] = result.execution_time
+                        status['execution_time'] = result.optimization_time
 
                 return status
 

@@ -79,8 +79,18 @@ def optimize():
 
 def _run_classical_optimization(data):
     """Internal classical optimization logic"""
+    # Provide detailed validation error message
+    if 'warehouses' not in data:
+        raise ValidationError('Missing required field: warehouses')
+    if 'customers' not in data:
+        raise ValidationError('Missing required field: customers')
+    if not isinstance(data.get('warehouses'), list) or len(data.get('warehouses', [])) == 0:
+        raise ValidationError('warehouses must be a non-empty array')
+    if not isinstance(data.get('customers'), list) or len(data.get('customers', [])) == 0:
+        raise ValidationError('customers must be a non-empty array')
+    
     if not validate_optimization_request(data):
-        raise ValidationError('Invalid input data for classical optimization')
+        raise ValidationError('Invalid input data for classical optimization. Check that warehouses and customers have required fields: id, name, latitude, longitude, capacity/demand')
     
     try:
         result = optimization_service.run_classical_optimization(data)
@@ -98,23 +108,49 @@ def _run_classical_optimization(data):
 
 def _run_quantum_optimization(data):
     """Internal quantum optimization logic"""
+    # Provide detailed validation error message
+    if 'warehouses' not in data:
+        raise ValidationError('Missing required field: warehouses')
+    if 'customers' not in data:
+        raise ValidationError('Missing required field: customers')
+    if not isinstance(data.get('warehouses'), list) or len(data.get('warehouses', [])) == 0:
+        raise ValidationError('warehouses must be a non-empty array')
+    if not isinstance(data.get('customers'), list) or len(data.get('customers', [])) == 0:
+        raise ValidationError('customers must be a non-empty array')
+    
     if not validate_optimization_request(data):
-        raise ValidationError('Invalid input data for quantum optimization')
+        raise ValidationError('Invalid input data for quantum optimization. Check that warehouses and customers have required fields: id, name, latitude, longitude, capacity/demand')
     
     # Extract backend selection parameters
     backend_policy = data.get('backendPolicy', 'simulator')  # 'simulator', 'device', 'shortest_queue'
     backend_name = data.get('backendName')  # Optional specific backend
+    job_mode = data.get('jobMode', 'inline')  # 'inline' or 'batch'
     
     try:
-        result = optimization_service.run_quantum_optimization(
-            data, 
-            backend_policy=backend_policy,
-            backend_name=backend_name
-        )
-        return success_response(
-            {'method': 'quantum', 'result': result},
-            message='Optimization completed'
-        )
+        if job_mode == 'batch':
+            enqueue_info = optimization_service.enqueue_quantum_job(
+                data,
+                backend_policy=backend_policy,
+                backend_name=backend_name,
+            )
+            return success_response(
+                {
+                    'method': 'quantum',
+                    'jobMode': 'batch',
+                    'job': enqueue_info,
+                },
+                message='Quantum job enqueued'
+            )
+        else:
+            result = optimization_service.run_quantum_optimization(
+                data, 
+                backend_policy=backend_policy,
+                backend_name=backend_name
+            )
+            return success_response(
+                {'method': 'quantum', 'result': result},
+                message='Optimization completed'
+            )
     except Exception as e:
         raise OptimizationError(
             'Quantum optimization failed', 
@@ -125,8 +161,18 @@ def _run_quantum_optimization(data):
 
 def _run_hybrid_optimization(data):
     """Internal hybrid optimization logic"""
+    # Provide detailed validation error message
+    if 'warehouses' not in data:
+        raise ValidationError('Missing required field: warehouses')
+    if 'customers' not in data:
+        raise ValidationError('Missing required field: customers')
+    if not isinstance(data.get('warehouses'), list) or len(data.get('warehouses', [])) == 0:
+        raise ValidationError('warehouses must be a non-empty array')
+    if not isinstance(data.get('customers'), list) or len(data.get('customers', [])) == 0:
+        raise ValidationError('customers must be a non-empty array')
+    
     if not validate_optimization_request(data):
-        raise ValidationError('Invalid input data for hybrid optimization')
+        raise ValidationError('Invalid input data for hybrid optimization. Check that warehouses and customers have required fields: id, name, latitude, longitude, capacity/demand')
     
     try:
         result = optimization_service.run_hybrid_optimization(data)
@@ -179,6 +225,107 @@ def optimize_hybrid():
             'OPTIMIZATION_FAILED', 'Hybrid optimization failed',
             details=str(e), status=500
         )
+
+
+@api_bp.route('/optimize/multi-objective', methods=['POST'])
+@handle_domain_exceptions
+def optimize_multi_objective():
+    """
+    Run multi-objective optimization with weight sweep.
+    
+    Expects:
+    - method: 'classical', 'quantum', or 'hybrid'
+    - weightConfigs: List of weight configurations [{cost, co2, time}, ...]
+    - data: Standard optimization input data
+    
+    Returns Pareto front and all solutions with dominance info.
+    """
+    from utils.pareto import compute_pareto_front, compute_quality_metrics
+    
+    request_data = request.get_json(silent=True)
+    if not request_data:
+        raise ValidationError('No data provided')
+    
+    method = request_data.get('method', 'hybrid').lower()
+    weight_configs = request_data.get('weightConfigs', [])
+    optimization_data = request_data.get('data', {})
+    
+    if not weight_configs:
+        raise ValidationError('No weight configurations provided')
+    
+    if not validate_optimization_request(optimization_data):
+        raise ValidationError('Invalid optimization data')
+    
+    # Run optimization for each weight configuration
+    solutions = []
+    
+    for idx, weights in enumerate(weight_configs):
+        # Add weights to optimization data
+        opt_data = {**optimization_data, 'weights': weights}
+        
+        try:
+            # Route to appropriate optimization method
+            if method == 'classical':
+                result = optimization_service.run_classical_optimization(opt_data)
+            elif method == 'quantum':
+                result = optimization_service.run_quantum_optimization(
+                    opt_data,
+                    backend_policy=request_data.get('backendPolicy', 'simulator'),
+                    backend_name=request_data.get('backendName')
+                )
+            elif method == 'hybrid':
+                result = optimization_service.run_hybrid_optimization(opt_data)
+            else:
+                continue
+            
+            # Extract objectives from result
+            solution = {
+                'id': f"{method}_{idx}",
+                'method': method,
+                'weights': weights,
+                'cost': result.get('totalCost', 0),
+                'co2': result.get('totalCO2', 0),
+                'time': result.get('totalTime', 0),
+                'routes': result.get('routes', []),
+                'metadata': {
+                    'solveTime': result.get('solveTime', 0),
+                    'backend': result.get('backend'),
+                }
+            }
+            solutions.append(solution)
+            
+        except Exception as e:
+            # Log error but continue with other configurations
+            print(f"Warning: Optimization failed for weights {weights}: {str(e)}")
+            continue
+    
+    if not solutions:
+        raise OptimizationError(
+            'All optimizations failed',
+            method='multi-objective',
+            details={'count': len(weight_configs)}
+        )
+    
+    # Compute Pareto front
+    pareto_front, dominated = compute_pareto_front(solutions)
+    
+    # Compute quality metrics
+    # Use worst values as reference point
+    reference_point = {
+        'cost': max(s['cost'] for s in solutions) * 1.1,
+        'co2': max(s['co2'] for s in solutions) * 1.1,
+        'time': max(s['time'] for s in solutions) * 1.1,
+    }
+    quality_metrics = compute_quality_metrics(pareto_front, reference_point)
+    
+    return success_response({
+        'method': 'multi-objective',
+        'solutions': solutions,
+        'paretoFront': pareto_front,
+        'dominated': dominated,
+        'metrics': quality_metrics,
+        'weightConfigs': weight_configs,
+    }, message=f'Multi-objective optimization completed: {len(pareto_front)} Pareto optimal solutions')
 
 
 @api_bp.route('/optimize/vrp', methods=['POST'])
@@ -309,8 +456,10 @@ def validate_data():
         raise ValidationError('No data provided for validation')
     
     validation_result = data_service.validate_data(data)
+    # Convert Pydantic model to dict for JSON serialization
+    result_dict = validation_result.model_dump() if hasattr(validation_result, 'model_dump') else validation_result.dict()
     return success_response(
-        validation_result, message='Validation completed'
+        result_dict, message='Validation completed'
     )
 
 

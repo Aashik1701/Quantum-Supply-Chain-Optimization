@@ -7,8 +7,11 @@ import os
 import sys
 from unittest.mock import Mock
 
-# Add the backend directory to the Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Ensure backend root is on sys.path for imports like `from app import create_app`
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_ROOT = os.path.abspath(os.path.join(TESTS_DIR, '..'))
+if BACKEND_ROOT not in sys.path:
+    sys.path.insert(0, BACKEND_ROOT)
 
 from app import create_app
 from services.data_service import DataService

@@ -13,7 +13,13 @@ import os
 import sys
 import json
 import math
+import numpy as np
 from pathlib import Path
+from typing import Dict, List, Tuple, Any, Optional
+from sklearn.cluster import KMeans
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Ensure project root is on sys.path so local utils is importable
 THIS = Path(__file__).resolve()
@@ -271,6 +277,274 @@ def main():
 
     print(f"Hybrid solution saved to {output_path}")
     return hybrid_out
+
+# ============================================================================
+# QUBO Size Reduction & Warm-Start Methods
+# ============================================================================
+
+def cluster_customers(
+    customers: List[Dict[str, Any]],
+    n_clusters: int = None,
+    max_cluster_size: int = 50,
+) -> Tuple[List[Dict], Dict[str, List[str]]]:
+    """Cluster customers by geographic proximity to reduce QUBO size.
+    
+    Args:
+        customers: List of customer dicts with 'id', 'latitude', 'longitude', 'demand'
+        n_clusters: Number of clusters (auto if None)
+        max_cluster_size: Maximum customers per cluster
+    
+    Returns:
+        cluster_representatives: List of cluster center dicts
+        cluster_mapping: {cluster_id: [customer_ids]}
+    """
+    if not customers:
+        return [], {}
+    
+    n_customers = len(customers)
+    if n_customers <= max_cluster_size:
+        # No need to cluster
+        return customers, {customers[0]['id']: [c['id'] for c in customers]}
+    
+    # Auto determine clusters
+    if n_clusters is None:
+        n_clusters = max(2, min(n_customers // max_cluster_size, n_customers // 2))
+    
+    # Extract coordinates
+    coords = np.array([[c['latitude'], c['longitude']] for c in customers])
+    
+    # KMeans clustering
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    labels = kmeans.fit_predict(coords)
+    
+    # Build cluster representatives and mapping
+    cluster_reps = []
+    cluster_map = {}
+    
+    for cluster_id in range(n_clusters):
+        cluster_customers = [customers[i] for i in range(n_customers) if labels[i] == cluster_id]
+        if not cluster_customers:
+            continue
+        
+        # Representative: centroid + aggregated demand
+        center = kmeans.cluster_centers_[cluster_id]
+        total_demand = sum(c.get('demand', 0) for c in cluster_customers)
+        
+        rep_id = f"CLUSTER_{cluster_id}"
+        cluster_reps.append({
+            'id': rep_id,
+            'latitude': float(center[0]),
+            'longitude': float(center[1]),
+            'demand': total_demand,
+            'is_cluster': True,
+            'cluster_size': len(cluster_customers),
+        })
+        
+        cluster_map[rep_id] = [c['id'] for c in cluster_customers]
+    
+    logger.info(f"Clustered {n_customers} customers into {len(cluster_reps)} clusters")
+    return cluster_reps, cluster_map
+
+
+def eliminate_dominated_pairs(
+    warehouses: List[Dict[str, Any]],
+    customers: List[Dict[str, Any]],
+    distance_matrix: np.ndarray,
+    cost_threshold: float = 2.0,
+) -> Tuple[np.ndarray, List[Tuple[int, int]]]:
+    """Eliminate warehouse-customer pairs with prohibitively high costs.
+    
+    Args:
+        warehouses: List of warehouse dicts
+        customers: List of customer dicts
+        distance_matrix: (n_warehouses, n_customers) distance matrix
+        cost_threshold: Multiple of min cost to consider dominated
+    
+    Returns:
+        valid_pairs_mask: Boolean mask (n_warehouses, n_customers)
+        eliminated_pairs: List of (warehouse_idx, customer_idx) tuples
+    """
+    n_w, n_c = distance_matrix.shape
+    valid_mask = np.ones((n_w, n_c), dtype=bool)
+    eliminated = []
+    
+    for j in range(n_c):
+        min_cost = distance_matrix[:, j].min()
+        for i in range(n_w):
+            if distance_matrix[i, j] > cost_threshold * min_cost:
+                valid_mask[i, j] = False
+                eliminated.append((i, j))
+    
+    logger.info(f"Eliminated {len(eliminated)} dominated pairs out of {n_w * n_c}")
+    return valid_mask, eliminated
+
+
+def expand_solution(
+    reduced_solution: Dict[str, str],
+    cluster_mapping: Dict[str, List[str]],
+    warehouses: List[Dict[str, Any]],
+    customers: List[Dict[str, Any]],
+) -> Dict[str, str]:
+    """Expand clustered solution back to individual customer assignments.
+    
+    Args:
+        reduced_solution: {cluster_id/customer_id: warehouse_id}
+        cluster_mapping: {cluster_id: [customer_ids]}
+        warehouses: Original warehouse list
+        customers: Original customer list
+    
+    Returns:
+        full_solution: {customer_id: warehouse_id}
+    """
+    full_solution = {}
+    
+    for entity_id, warehouse_id in reduced_solution.items():
+        if entity_id in cluster_mapping:
+            # Expand cluster to individual customers
+            for customer_id in cluster_mapping[entity_id]:
+                full_solution[customer_id] = warehouse_id
+        else:
+            # Direct customer assignment
+            full_solution[entity_id] = warehouse_id
+    
+    # Ensure all customers have assignments
+    customer_ids = {c['id'] for c in customers}
+    unassigned = customer_ids - set(full_solution.keys())
+    
+    if unassigned:
+        logger.warning(f"{len(unassigned)} customers unassigned after expansion")
+        # Assign to nearest warehouse
+        wh_coords = {w['id']: (w['latitude'], w['longitude']) for w in warehouses}
+        cust_coords = {c['id']: (c['latitude'], c['longitude']) for c in customers}
+        
+        for cust_id in unassigned:
+            lat, lon = cust_coords[cust_id]
+            nearest_wh = min(wh_coords.keys(), 
+                           key=lambda wh: haversine(lat, lon, wh_coords[wh][0], wh_coords[wh][1]))
+            full_solution[cust_id] = nearest_wh
+    
+    logger.info(f"Expanded solution to {len(full_solution)} customer assignments")
+    return full_solution
+
+
+def generate_warm_start_params(
+    classical_solution: Dict[str, str],
+    warehouses: List[Dict[str, Any]],
+    customers: List[Dict[str, Any]],
+    num_params: int = 2,
+) -> np.ndarray:
+    """Generate warm-start QAOA parameters from classical solution.
+    
+    Args:
+        classical_solution: {customer_id: warehouse_id}
+        warehouses: List of warehouse dicts
+        customers: List of customer dicts
+        num_params: Number of QAOA layers (p)
+    
+    Returns:
+        initial_params: Array of shape (2*num_params,) with [gamma, beta] values
+    """
+    # Simple heuristic: use classical solution quality to inform initial angles
+    # Higher quality (lower cost) → smaller mixing angles
+    
+    n_assignments = len(classical_solution)
+    if n_assignments == 0:
+        # Fallback to standard initial point
+        return np.array([0.5] * num_params + [0.5] * num_params)
+    
+    # Count violations (customers assigned to same warehouse)
+    warehouse_counts = {}
+    for customer_id, warehouse_id in classical_solution.items():
+        warehouse_counts[warehouse_id] = warehouse_counts.get(warehouse_id, 0) + 1
+    
+    # Quality metric: balance across warehouses (0=perfect, 1=all to one)
+    max_count = max(warehouse_counts.values())
+    balance = 1.0 - (max_count / n_assignments)
+    
+    # Map balance to angles
+    # Better balance → start closer to solution (smaller gamma, larger beta)
+    gamma_scale = 0.3 + 0.4 * (1 - balance)  # [0.3, 0.7]
+    beta_scale = 0.6 - 0.3 * (1 - balance)   # [0.3, 0.6]
+    
+    gammas = [gamma_scale * (i + 1) / num_params for i in range(num_params)]
+    betas = [beta_scale * (num_params - i) / num_params for i in range(num_params)]
+    
+    initial_params = np.array(gammas + betas)
+    logger.info(f"Generated warm-start params (balance={balance:.3f}): {initial_params}")
+    return initial_params
+
+
+def reduce_problem(
+    warehouses: List[Dict[str, Any]],
+    customers: List[Dict[str, Any]],
+    distance_matrix: np.ndarray,
+    max_customers: int = 50,
+    enable_clustering: bool = True,
+    enable_elimination: bool = True,
+) -> Dict[str, Any]:
+    """Main QUBO reduction pipeline.
+    
+    Args:
+        warehouses: List of warehouse dicts
+        customers: List of customer dicts
+        distance_matrix: (n_warehouses, n_customers) distance matrix
+        max_customers: Max customers before clustering
+        enable_clustering: Enable customer clustering
+        enable_elimination: Enable dominated pair elimination
+    
+    Returns:
+        reduction_info: {
+            'reduced_warehouses': [...],
+            'reduced_customers': [...],
+            'reduced_distance_matrix': ndarray,
+            'cluster_mapping': {...},
+            'valid_pairs_mask': ndarray,
+            'original_sizes': (n_warehouses, n_customers),
+            'reduced_sizes': (n_reduced_warehouses, n_reduced_customers),
+        }
+    """
+    original_sizes = (len(warehouses), len(customers))
+    
+    # Step 1: Clustering
+    reduced_customers = customers
+    cluster_mapping = {}
+    
+    if enable_clustering and len(customers) > max_customers:
+        reduced_customers, cluster_mapping = cluster_customers(
+            customers, max_cluster_size=max_customers
+        )
+        # Recompute distance matrix for clusters
+        n_w = len(warehouses)
+        n_c_reduced = len(reduced_customers)
+        reduced_dist = np.zeros((n_w, n_c_reduced))
+        
+        for i, wh in enumerate(warehouses):
+            for j, cust in enumerate(reduced_customers):
+                lat1, lon1 = wh['latitude'], wh['longitude']
+                lat2, lon2 = cust['latitude'], cust['longitude']
+                reduced_dist[i, j] = haversine(lat1, lon1, lat2, lon2)
+        
+        distance_matrix = reduced_dist
+    
+    # Step 2: Variable elimination
+    valid_pairs_mask = None
+    if enable_elimination:
+        valid_pairs_mask, _ = eliminate_dominated_pairs(
+            warehouses, reduced_customers, distance_matrix
+        )
+    
+    reduced_sizes = (len(warehouses), len(reduced_customers))
+    
+    return {
+        'reduced_warehouses': warehouses,
+        'reduced_customers': reduced_customers,
+        'reduced_distance_matrix': distance_matrix,
+        'cluster_mapping': cluster_mapping,
+        'valid_pairs_mask': valid_pairs_mask,
+        'original_sizes': original_sizes,
+        'reduced_sizes': reduced_sizes,
+    }
+
 
 if __name__ == "__main__":
     main()
