@@ -26,7 +26,7 @@ export const runOptimization = createAsyncThunk(
   'optimization/runOptimization',
   async (payload: { method: string; parameters?: any; warehouses?: any[]; customers?: any[]; routes?: any[] }, { rejectWithValue }) => {
     try {
-      const result = await apiService.runOptimization({
+      const response = await apiService.runOptimization({
         method: payload.method,
         parameters: payload.parameters,
         data: {
@@ -35,7 +35,9 @@ export const runOptimization = createAsyncThunk(
           routes: payload.routes,
         }
       })
-      return result
+      // API returns {method: "classical", result: {...}}
+      // We want just the result object with all the data
+      return response?.result || response
     } catch (error: any) {
       return rejectWithValue(error.message || 'Optimization failed')
     }
@@ -47,12 +49,12 @@ export const runVRPOptimization = createAsyncThunk(
   'optimization/runVRPOptimization',
   async (payload: { warehouses?: any[]; customers?: any[]; routes?: any[] }, { rejectWithValue }) => {
     try {
-      const result = await apiService.runVRPOptimization({
+      const response = await apiService.runVRPOptimization({
         warehouses: payload.warehouses,
         customers: payload.customers,
         routes: payload.routes,
       })
-      return result
+      return response?.result || response
     } catch (error: any) {
       return rejectWithValue(error.message || 'VRP Optimization failed')
     }
@@ -64,12 +66,12 @@ export const runHybridVRPOptimization = createAsyncThunk(
   'optimization/runHybridVRPOptimization',
   async (payload: { warehouses?: any[]; customers?: any[]; routes?: any[] }, { rejectWithValue }) => {
     try {
-      const result = await apiService.runHybridVRPOptimization({
+      const response = await apiService.runHybridVRPOptimization({
         warehouses: payload.warehouses,
         customers: payload.customers,
         routes: payload.routes,
       })
-      return result
+      return response?.result || response
     } catch (error: any) {
       return rejectWithValue(error.message || 'Hybrid VRP Optimization failed')
     }

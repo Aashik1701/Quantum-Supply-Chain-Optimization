@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { useSelector } from 'react-redux'
-import { RootState } from '../store'
+import { useSelector, useDispatch } from 'react-redux'
+import { RootState, AppDispatch } from '../store'
+import { fetchData, setWarehouses, setCustomers } from '../store/dataSlice'
 import OptimizationPanel from '../components/optimization/OptimizationPanel'
 import MethodSelector from '../components/optimization/MethodSelector'
 import ParameterConfig from '../components/optimization/ParameterConfig'
@@ -9,6 +10,7 @@ import ResultsPanel from '../components/optimization/ResultsPanel'
 import MapVisualization from '../components/visualization/MapVisualization'
 
 const OptimizationPage: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
   const { 
     isRunning, 
     progress, 
@@ -17,6 +19,31 @@ const OptimizationPage: React.FC = () => {
   const { warehouses, customers, routes } = useSelector((state: RootState) => state.data)
 
   const [activeTab, setActiveTab] = useState<'configure' | 'progress' | 'results'>('configure')
+
+  // Fetch data when page loads
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await dispatch(fetchData()).unwrap()
+      } catch (error) {
+        console.log('Could not fetch data from backend, using sample data')
+        // Load sample data if backend fetch fails
+        dispatch(setWarehouses([
+          { id: 'W1', name: 'Warehouse 1', latitude: 40.7128, longitude: -74.006, capacity: 1000 },
+          { id: 'W2', name: 'Warehouse 2', latitude: 34.0522, longitude: -118.2437, capacity: 1500 }
+        ]))
+        dispatch(setCustomers([
+          { id: 'C1', name: 'Customer 1', latitude: 40.7589, longitude: -73.9851, demand: 100 },
+          { id: 'C2', name: 'Customer 2', latitude: 34.0522, longitude: -118.2437, demand: 150 }
+        ]))
+      }
+    }
+    
+    // Only load if we don't have data yet
+    if (!warehouses || warehouses.length === 0) {
+      loadData()
+    }
+  }, [])
 
   useEffect(() => {
     if (isRunning && progress < 100) {

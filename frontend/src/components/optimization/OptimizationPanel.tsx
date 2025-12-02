@@ -27,18 +27,28 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({ onOptimize }) => 
     if (isRunning) {
       dispatch(stopOptimization())
     } else {
+      // Validate that we have data
+      if (!warehouses || warehouses.length === 0) {
+        console.error('No warehouses data available. Please add warehouse data first.')
+        return
+      }
+      if (!customers || customers.length === 0) {
+        console.error('No customers data available. Please add customer data first.')
+        return
+      }
+
       try {
         if (selectedMethod === 'vrp') {
           await dispatch(runVRPOptimization({ 
             warehouses,
             customers,
-            routes 
+            routes: routes || []
           })).unwrap()
         } else if (selectedMethod === 'hybrid-vrp') {
           await dispatch(runHybridVRPOptimization({ 
             warehouses,
             customers,
-            routes 
+            routes: routes || []
           })).unwrap()
         } else {
           await dispatch(runOptimization({ 
@@ -46,7 +56,7 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({ onOptimize }) => 
             parameters,
             warehouses,
             customers,
-            routes 
+            routes: routes || []
           })).unwrap()
         }
         if (onOptimize) {
@@ -58,9 +68,28 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({ onOptimize }) => 
     }
   }
 
+  const hasData = warehouses && warehouses.length > 0 && customers && customers.length > 0
+  const dataStatus = `${warehouses?.length || 0} warehouses, ${customers?.length || 0} customers`
+
   return (
     <div className="bg-slate-800 rounded-lg shadow-md p-6 border border-slate-700">
       <h2 className="text-2xl font-bold text-slate-200 mb-6">Optimization Settings</h2>
+      
+      {/* Data Status */}
+      {!hasData && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-yellow-800 text-sm font-medium">⚠️ No data loaded</p>
+          <p className="text-yellow-700 text-xs mt-1">
+            Please go to <a href="/data" className="underline">Data Management</a> page to upload warehouse and customer data, or the system will use sample data.
+          </p>
+        </div>
+      )}
+
+      {hasData && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-green-800 text-sm">✓ Data loaded: {dataStatus}</p>
+        </div>
+      )}
       
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">

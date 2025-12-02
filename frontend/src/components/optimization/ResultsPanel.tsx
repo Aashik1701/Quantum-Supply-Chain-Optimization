@@ -49,21 +49,21 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ className = '' }) => {
         <div className="bg-blue-50 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-800">Total Cost</h3>
           <p className="text-2xl font-bold text-blue-900">
-            ${results.total_cost?.toFixed(2) || 'N/A'}
+            ${(results.totalCost || results.total_cost || 0).toFixed(2)}
           </p>
         </div>
         
         <div className="bg-green-50 rounded-lg p-4">
           <h3 className="text-sm font-medium text-green-800">CO2 Emissions</h3>
           <p className="text-2xl font-bold text-green-900">
-            {results.total_co2?.toFixed(2) || 'N/A'} kg
+            {(results.totalCo2 || results.total_co2 || 0).toFixed(2)} kg
           </p>
         </div>
         
         <div className="bg-purple-50 rounded-lg p-4">
           <h3 className="text-sm font-medium text-purple-800">Avg Delivery Time</h3>
           <p className="text-2xl font-bold text-purple-900">
-            {results.avg_delivery_time?.toFixed(1) || 'N/A'} hours
+            {(results.avgDeliveryTime || results.avg_delivery_time || 0).toFixed(2)} hours
           </p>
         </div>
       </div>
@@ -80,12 +80,13 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ className = '' }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600">Routes Used</p>
-            <p className="text-lg font-medium">{results.routes_used || 0}</p>
+            <p className="text-lg font-medium">{results.routesUsed || results.routes_used || 0}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Execution Time</p>
             <p className="text-lg font-medium">
-              {results.performance_metrics?.optimization_time_seconds?.toFixed(2) || 'N/A'}s
+              {(results.performanceMetrics?.optimizationTimeSeconds || 
+                results.performance_metrics?.optimization_time_seconds || 0).toFixed(4)}s
             </p>
           </div>
         </div>
