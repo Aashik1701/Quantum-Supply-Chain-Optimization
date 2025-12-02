@@ -28,10 +28,15 @@ logger = logging.getLogger(__name__)
 class DatabaseOptimizationService:
     """Optimization service with database persistence"""
 
-    def __init__(self):
-        """Initialize optimization service"""
+    def __init__(self, socketio=None):
+        """Initialize optimization service
+        
+        Args:
+            socketio: Flask-SocketIO instance for progress streaming
+        """
         self.lp_solver = ClassicalOptimizer()
         self.qaoa_solver = QuantumOptimizer()
+        self.socketio = socketio
 
     @contextmanager
     def _get_session(self):
@@ -135,10 +140,17 @@ class DatabaseOptimizationService:
 
     def run_quantum_optimization(
         self,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
+        backend_policy: str = 'simulator',
+        backend_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Run quantum optimization with database job tracking
+        
+        Args:
+            data: Optimization input data
+            backend_policy: 'simulator', 'device', or 'shortest_queue'
+            backend_name: Optional specific backend name
         """
         with self._get_session() as session:
             job_repo = OptimizationJobRepository(session)
@@ -148,20 +160,63 @@ class DatabaseOptimizationService:
             job = job_repo.create(
                 method=OptimizationMethod.QUANTUM,
                 input_data=data,
-                parameters=data
+                parameters={**data, 'backendPolicy': backend_policy, 'backendName': backend_name}
             )
             
             # Update status to running
             job_repo.update_status(job.id, JobStatus.RUNNING)
 
             try:
+                # Select backend based on policy
+                from config.quantum_config import ibm_quantum
+                selected_backend = None
+                use_ibm = False
+                
+                if backend_name or backend_policy != 'simulator':
+                    # Try to use IBM backend
+                    selected_backend = ibm_quantum.select_backend(backend_policy, backend_name)
+                    use_ibm = bool(selected_backend)
+                
                 # Run optimization
                 warehouses = data.get('warehouses', [])
                 customers = data.get('customers', [])
                 distance_matrix = self._calculate_distance_matrix(
                     warehouses, customers
                 )
-                result_data = self.qaoa_solver.optimize(
+                
+                # Create progress callback for WebSocket streaming
+                def progress_callback(progress_data):
+                    if self.socketio:
+                        try:
+                            self.socketio.emit(
+                                'optimization_progress',
+                                {
+                                    'job_id': str(job.id),
+                                    'iteration': progress_data['iteration'],
+                                    'energy': progress_data['energy'],
+                                    'timestamp': progress_data['timestamp']
+                                },
+                                room=str(job.id)
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to emit progress: {e}")
+                
+                # Create optimizer with selected backend
+                from quantum.qaoa_solver import QuantumOptimizer
+                if use_ibm and selected_backend:
+                    optimizer = QuantumOptimizer(
+                        backend=selected_backend, 
+                        use_ibm=True,
+                        progress_callback=progress_callback
+                    )
+                else:
+                    optimizer = QuantumOptimizer(
+                        backend='qasm_simulator', 
+                        use_ibm=False,
+                        progress_callback=progress_callback
+                    )
+                
+                result_data = optimizer.optimize(
                     warehouses=warehouses,
                     customers=customers,
                     distance_matrix=distance_matrix,

@@ -16,15 +16,41 @@ from utils.validators import validate_optimization_request
 
 api_bp = Blueprint('api', __name__)
 
-# Initialize services with database persistence
-optimization_service = DatabaseOptimizationService()
+# Services will be initialized with socketio after app creation
+optimization_service = None
 data_service = DatabaseDataService()
+
+
+def init_routes(socketio):
+    """Initialize routes with socketio instance"""
+    global optimization_service
+    optimization_service = DatabaseOptimizationService(socketio=socketio)
 
 
 @api_bp.route('/health', methods=['GET'])
 def health():
     """API health check"""
     return success_response({'status': 'healthy', 'service': 'api'})
+
+
+@api_bp.route('/backends', methods=['GET'])
+@handle_domain_exceptions
+def list_backends():
+    """List available quantum backends"""
+    from config.quantum_config import ibm_quantum
+    
+    try:
+        backends_info = ibm_quantum.get_backends_info()
+        return success_response({
+            'backends': backends_info,
+            'connected': ibm_quantum.service is not None
+        }, message='Backends retrieved successfully')
+    except Exception as e:
+        return success_response({
+            'backends': [],
+            'connected': False,
+            'error': str(e)
+        }, message='Could not retrieve backends')
 
 
 # Optimization endpoints
@@ -75,8 +101,16 @@ def _run_quantum_optimization(data):
     if not validate_optimization_request(data):
         raise ValidationError('Invalid input data for quantum optimization')
     
+    # Extract backend selection parameters
+    backend_policy = data.get('backendPolicy', 'simulator')  # 'simulator', 'device', 'shortest_queue'
+    backend_name = data.get('backendName')  # Optional specific backend
+    
     try:
-        result = optimization_service.run_quantum_optimization(data)
+        result = optimization_service.run_quantum_optimization(
+            data, 
+            backend_policy=backend_policy,
+            backend_name=backend_name
+        )
         return success_response(
             {'method': 'quantum', 'result': result},
             message='Optimization completed'

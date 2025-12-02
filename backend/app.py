@@ -52,6 +52,9 @@ def create_app(config_class=Config):
         )
     # Register WebSocket events
     socketio_events(socketio)
+    # Initialize routes with socketio
+    from api.routes import init_routes
+    init_routes(socketio)
     # Middleware for production
     if app.config.get('ENV') == 'production':
         app.wsgi_app = ProxyFix(

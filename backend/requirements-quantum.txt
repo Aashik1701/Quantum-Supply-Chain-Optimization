@@ -1,0 +1,19 @@
+# Quantum Computing Dependencies
+# Install these for full quantum optimization features
+
+# Core Qiskit - IBM Quantum Computing Framework
+qiskit==0.45.1
+qiskit-aer==0.13.1           # High-performance simulators
+qiskit-ibm-runtime==0.15.0   # IBM Quantum Platform access
+qiskit-optimization==0.6.0   # Optimization algorithms
+
+# Quantum algorithms
+qiskit-algorithms==0.2.1
+qiskit-nature==0.7.1
+
+# Visualization (optional)
+qiskit-terra[visualization]==0.45.1
+pylatexenc==2.10             # For circuit LaTeX rendering
+
+# Performance
+qiskit-qasm3-import==0.4.1

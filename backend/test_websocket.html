@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Progress Test</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #progress {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .progress-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .energy-chart {
+            margin-top: 20px;
+            height: 200px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 QAOA Progress Streaming Test</h1>
+        
+        <div id="status" class="status disconnected">
+            ⚠️ Not connected
+        </div>
+
+        <div>
+            <button id="connectBtn" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+            <button id="startOptBtn" onclick="startOptimization()" disabled>Start Optimization</button>
+        </div>
+
+        <div id="progress">
+            <strong>Progress Events:</strong>
+            <div id="events"></div>
+        </div>
+
+        <div class="energy-chart">
+            <canvas id="energyChart" width="760" height="180"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let jobId = null;
+        let energyHistory = [];
+        const canvas = document.getElementById('energyChart');
+        const ctx = canvas.getContext('2d');
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const startOptBtn = document.getElementById('startOptBtn');
+
+            if (connected) {
+                statusEl.className = 'status connected';
+                statusEl.textContent = '✅ Connected to server';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                startOptBtn.disabled = false;
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.textContent = '⚠️ Not connected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                startOptBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            socket = io('http://localhost:5000');
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                updateStatus(true);
+                addEvent('🟢 Connected to WebSocket');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+                updateStatus(false);
+                addEvent('🔴 Disconnected from WebSocket');
+            });
+
+            socket.on('optimization_progress', (data) => {
+                console.log('Progress:', data);
+                addEvent(`📊 Iteration ${data.iteration}: Energy = ${data.energy.toFixed(4)}`);
+                energyHistory.push(data.energy);
+                updateChart();
+            });
+
+            socket.on('optimization_complete', (data) => {
+                console.log('Complete:', data);
+                addEvent('✅ Optimization complete!');
+            });
+
+            socket.on('optimization_error', (data) => {
+                console.error('Error:', data);
+                addEvent('❌ Optimization error: ' + data.error);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function addEvent(message) {
+            const eventsDiv = document.getElementById('events');
+            const item = document.createElement('div');
+            item.className = 'progress-item';
+            const timestamp = new Date().toLocaleTimeString();
+            item.textContent = `[${timestamp}] ${message}`;
+            eventsDiv.appendChild(item);
+            eventsDiv.scrollTop = eventsDiv.scrollHeight;
+        }
+
+        function updateChart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (energyHistory.length === 0) return;
+
+            const padding = 20;
+            const width = canvas.width - 2 * padding;
+            const height = canvas.height - 2 * padding;
+
+            const minEnergy = Math.min(...energyHistory);
+            const maxEnergy = Math.max(...energyHistory);
+            const range = maxEnergy - minEnergy || 1;
+
+            // Draw axes
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            // Draw energy line
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            energyHistory.forEach((energy, i) => {
+                const x = padding + (i / (energyHistory.length - 1 || 1)) * width;
+                const y = canvas.height - padding - ((energy - minEnergy) / range) * height;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText(`Min: ${minEnergy.toFixed(2)}`, padding, padding - 5);
+            ctx.fillText(`Max: ${maxEnergy.toFixed(2)}`, padding, canvas.height - padding + 15);
+            ctx.fillText(`Iterations: ${energyHistory.length}`, canvas.width - 120, canvas.height - padding + 15);
+        }
+
+        async function startOptimization() {
+            addEvent('🚀 Starting optimization via API...');
+            energyHistory = [];
+            updateChart();
+
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        method: 'quantum',
+                        backendPolicy: 'simulator',
+                        warehouses: [
+                            {id: 'W1', name: 'NY', latitude: 40.7128, longitude: -74.0060, capacity: 100},
+                            {id: 'W2', name: 'Chicago', latitude: 41.8781, longitude: -87.6298, capacity: 80}
+                        ],
+                        customers: [
+                            {id: 'C1', name: 'Boston', latitude: 42.3601, longitude: -71.0589, demand: 30},
+                            {id: 'C2', name: 'Miami', latitude: 25.7617, longitude: -80.1918, demand: 40}
+                        ]
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Result:', result);
+                
+                if (result.status === 'success') {
+                    jobId = result.data?.result?.job_id;
+                    if (jobId) {
+                        addEvent(`📋 Job ID: ${jobId}`);
+                        socket.emit('join_optimization', { job_id: jobId });
+                    }
+                    const cost = result.data?.result?.result?.total_cost;
+                    if (cost) {
+                        addEvent(`💰 Total cost: $${cost.toFixed(2)}`);
+                    }
+                } else {
+                    addEvent(`❌ API error: ${result.error?.message || 'Unknown'}`);
+                }
+            } catch (error) {
+                console.error('API error:', error);
+                addEvent(`❌ Failed to start optimization: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
