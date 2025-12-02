@@ -10,21 +10,21 @@ from utils.exceptions import (
     DataNotFoundError,
     handle_domain_exceptions
 )
-from services.database_optimization_service import DatabaseOptimizationService
+from services.optimization_service import OptimizationService
 from services.database_data_service import DatabaseDataService
 from utils.validators import validate_optimization_request
 
 api_bp = Blueprint('api', __name__)
 
-# Services will be initialized with socketio after app creation
-optimization_service = None
+# Services - using simple in-memory service for testing
+optimization_service = OptimizationService()
 data_service = DatabaseDataService()
 
 
 def init_routes(socketio):
     """Initialize routes with socketio instance"""
-    global optimization_service
-    optimization_service = DatabaseOptimizationService(socketio=socketio)
+    # Using simple optimization service - no socketio needed for now
+    pass
 
 
 @api_bp.route('/health', methods=['GET'])
@@ -58,19 +58,35 @@ def list_backends():
 @handle_domain_exceptions
 def optimize():
     """Generic optimization dispatcher endpoint"""
-    data = request.get_json(silent=True)
-    if not data:
+    payload = request.get_json(silent=True)
+    if not payload:
         raise ValidationError('No data provided')
     
-    method = data.get('method', 'hybrid').lower()
+    method = payload.get('method', 'hybrid').lower()
+    
+    # Extract data - frontend sends it nested under 'data' key
+    # Backend expects warehouses, customers, routes at root level
+    data = payload.get('data', {})
+    
+    # Merge parameters and data for optimization
+    optimization_data = {
+        'method': method,
+        'warehouses': data.get('warehouses', []),
+        'customers': data.get('customers', []),
+        'routes': data.get('routes', []),
+        'parameters': payload.get('parameters', {}),
+        'backendPolicy': payload.get('backendPolicy', 'simulator'),
+        'backendName': payload.get('backendName'),
+        'jobMode': payload.get('jobMode', 'inline')
+    }
     
     # Route to specific optimization method
     if method == 'classical':
-        return _run_classical_optimization(data)
+        return _run_classical_optimization(optimization_data)
     elif method == 'quantum':
-        return _run_quantum_optimization(data)
+        return _run_quantum_optimization(optimization_data)
     elif method == 'hybrid':
-        return _run_hybrid_optimization(data)
+        return _run_hybrid_optimization(optimization_data)
     else:
         raise ValidationError(
             f'Invalid method: {method}. Expected classical/quantum/hybrid'
@@ -533,7 +549,14 @@ def dashboard():
     warehouses = data_service.get_warehouses()
     customers = data_service.get_customers()
     routes_data = data_service.get_routes()
-    recent_results = optimization_service.get_recent_results(limit=5)
+    
+    # Get recent results from optimization service if available
+    recent_results = []
+    if hasattr(optimization_service, 'get_recent_results'):
+        recent_results = optimization_service.get_recent_results(limit=5)
+    elif hasattr(optimization_service, 'results_store'):
+        # For simple OptimizationService, get from in-memory store
+        recent_results = list(optimization_service.results_store.values())[-5:]
 
     payload = {
         'summary': {
@@ -543,6 +566,11 @@ def dashboard():
             'recentOptimizations': len(recent_results or []),
         },
         'recentResults': recent_results,
+        'metrics': {
+            'totalCost': sum(r.get('totalCost', 0) for r in recent_results),
+            'totalCo2': sum(r.get('totalCo2', 0) for r in recent_results),
+            'avgOptimizationTime': sum(r.get('optimization_time', 0) for r in recent_results) / max(len(recent_results), 1)
+        },
         # Include actual data for map visualization
         'warehouses': warehouses or [],
         'customers': customers or [],
