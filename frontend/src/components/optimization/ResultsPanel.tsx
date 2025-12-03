@@ -1,6 +1,11 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store'
+import { CardSkeleton } from '../ui/loading-skeleton'
+import { EmptyState } from '../ui/empty-state'
+import { BarChart3, DollarSign, Leaf, Clock, TrendingUp, CheckCircle } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Badge } from '../ui/badge'
 
 interface ResultsPanelProps {
   className?: string
@@ -11,143 +16,182 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ className = '' }) => {
 
   if (isRunning) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Optimization Results</h2>
-        <div className="flex items-center justify-center h-48">
-          <div className="text-gray-500">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p>Optimization in progress...</p>
-          </div>
-        </div>
+      <div className={className}>
+        <CardSkeleton />
       </div>
     )
   }
 
   if (!results) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Optimization Results</h2>
-        <div className="flex items-center justify-center h-48">
-          <div className="text-gray-500 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <p className="mt-2">No optimization results yet</p>
-            <p className="text-sm text-gray-400">Run an optimization to see results here</p>
-          </div>
-        </div>
-      </div>
+      <Card className={`bg-slate-800 border-slate-700 ${className}`}>
+        <CardContent className="pt-6">
+          <EmptyState
+            icon={BarChart3}
+            title="No optimization results yet"
+            description="Run an optimization to see detailed results, metrics, and route assignments here"
+          />
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Optimization Results</h2>
+    <Card className={`bg-slate-800 border-slate-700 ${className}`}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-2xl font-bold text-slate-200 flex items-center gap-2">
+            <CheckCircle className="h-6 w-6 text-green-500" />
+            Optimization Results
+          </CardTitle>
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+            {results.method || 'Unknown'} Method
+          </Badge>
+        </div>
+      </CardHeader>
       
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-800">Total Cost</h3>
-          <p className="text-2xl font-bold text-blue-900">
-            ${(results.totalCost || results.total_cost || 0).toFixed(2)}
-          </p>
+      <CardContent className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/20 transition-all">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-blue-400" />
+                </div>
+                <h3 className="text-sm font-medium text-slate-400">Total Cost</h3>
+              </div>
+              <p className="text-3xl font-bold text-blue-400">
+                ${(results.totalCost || results.total_cost || 0).toFixed(2)}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/30 hover:shadow-lg hover:shadow-green-500/20 transition-all">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <Leaf className="h-5 w-5 text-green-400" />
+                </div>
+                <h3 className="text-sm font-medium text-slate-400">CO2 Emissions</h3>
+              </div>
+              <p className="text-3xl font-bold text-green-400">
+                {(results.totalCo2 || results.total_co2 || 0).toFixed(2)} <span className="text-xl">kg</span>
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/20 transition-all">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <Clock className="h-5 w-5 text-purple-400" />
+                </div>
+                <h3 className="text-sm font-medium text-slate-400">Avg Delivery Time</h3>
+              </div>
+              <p className="text-3xl font-bold text-purple-400">
+                {(results.avgDeliveryTime || results.avg_delivery_time || 0).toFixed(2)} <span className="text-xl">hrs</span>
+              </p>
+            </CardContent>
+          </Card>
         </div>
-        
-        <div className="bg-green-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-green-800">CO2 Emissions</h3>
-          <p className="text-2xl font-bold text-green-900">
-            {(results.totalCo2 || results.total_co2 || 0).toFixed(2)} kg
-          </p>
-        </div>
-        
-        <div className="bg-purple-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-purple-800">Avg Delivery Time</h3>
-          <p className="text-2xl font-bold text-purple-900">
-            {(results.avgDeliveryTime || results.avg_delivery_time || 0).toFixed(2)} hours
-          </p>
-        </div>
-      </div>
 
-      {/* Method and Performance */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Optimization Details</h3>
-          <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
-            Method: {results.method || 'Unknown'}
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-600">Routes Used</p>
-            <p className="text-lg font-medium">{results.routesUsed || results.routes_used || 0}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Execution Time</p>
-            <p className="text-lg font-medium">
-              {(results.performanceMetrics?.optimizationTimeSeconds || 
-                results.performance_metrics?.optimization_time_seconds || 0).toFixed(4)}s
-            </p>
-          </div>
-        </div>
-      </div>
+        {/* Performance Metrics */}
+        <Card className="bg-slate-700/30 border-slate-600">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2 text-slate-200">
+              <TrendingUp className="h-5 w-5 text-blue-400" />
+              Performance Metrics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Routes Used</p>
+                <p className="text-2xl font-bold text-slate-200">{results.routesUsed || results.routes_used || 0}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Execution Time</p>
+                <p className="text-2xl font-bold text-slate-200">
+                  {(results.performanceMetrics?.optimizationTimeSeconds || 
+                    results.performance_metrics?.optimization_time_seconds || 0).toFixed(3)}<span className="text-sm">s</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Assignments</p>
+                <p className="text-2xl font-bold text-slate-200">{results.assignments?.length || 0}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Method</p>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 mt-1">
+                  {results.method || 'N/A'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Routes Table */}
-      {results.routes && results.routes.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Route Details</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Route
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Distance (km)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cost
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    CO2 (kg)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Delivery Time (h)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {results.routes.slice(0, 10).map((route: any, index: number) => (
-                  <tr key={route.id || index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {route.warehouse_id} → {route.customer_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {route.distance_km?.toFixed(1) || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${route.total_cost?.toFixed(2) || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {route.total_co2?.toFixed(2) || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {route.delivery_time_hours?.toFixed(1) || 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {results.routes.length > 10 && (
-            <p className="text-sm text-gray-500 mt-2">
-              Showing first 10 of {results.routes.length} routes
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+        {/* Routes Table */}
+        {results.routes && results.routes.length > 0 && (
+          <Card className="bg-slate-700/30 border-slate-600">
+            <CardHeader>
+              <CardTitle className="text-lg text-slate-200">Route Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-600">
+                  <thead className="bg-slate-800/50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Route
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Distance (km)
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Cost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        CO2 (kg)
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                        Delivery Time (h)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-600">
+                    {results.routes.slice(0, 10).map((route: any, index: number) => (
+                      <tr key={route.id || index} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
+                          {route.warehouse_id} → {route.customer_id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                          {route.distance_km?.toFixed(1) || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
+                          ${route.total_cost?.toFixed(2) || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-medium">
+                          {route.total_co2?.toFixed(2) || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-400 font-medium">
+                          {route.delivery_time_hours?.toFixed(1) || 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {results.routes.length > 10 && (
+                <p className="text-sm text-slate-400 mt-4 text-center">
+                  Showing first 10 of {results.routes.length} routes
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
